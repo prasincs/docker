@@ -8,7 +8,6 @@ import (
 	"github.com/dotcloud/docker/runtime/graphdriver"
 	"github.com/dotcloud/docker/utils"
 	"io/ioutil"
-	"os"
 	"path"
 	"strconv"
 	"time"
@@ -26,111 +25,17 @@ type Image struct {
 	Config          *runconfig.Config `json:"config,omitempty"`
 	Architecture    string            `json:"architecture,omitempty"`
 	OS              string            `json:"os,omitempty"`
-	Size            int64
+	Size            int64             `json:"Size,omitempty"` // FIXME: we messed up the case on this field
 
 	graph Graph
 }
 
-func LoadImage(root string) (*Image, error) {
-	// Load the json data
-	jsonData, err := ioutil.ReadFile(jsonPath(root))
-	if err != nil {
+// Build an Image object from raw json data
+func NewImgJSON(src []byte) (img *Image, err error) {
+	if err := json.Unmarshal(src, &img); err != nil {
 		return nil, err
 	}
-	img := &Image{}
-
-	if err := json.Unmarshal(jsonData, img); err != nil {
-		return nil, err
-	}
-	if err := utils.ValidateID(img.ID); err != nil {
-		return nil, err
-	}
-
-	if buf, err := ioutil.ReadFile(path.Join(root, "layersize")); err != nil {
-		if !os.IsNotExist(err) {
-			return nil, err
-		}
-		// If the layersize file does not exist then set the size to a negative number
-		// because a layer size of 0 (zero) is valid
-		img.Size = -1
-	} else {
-		size, err := strconv.Atoi(string(buf))
-		if err != nil {
-			return nil, err
-		}
-		img.Size = int64(size)
-	}
-
 	return img, nil
-}
-
-func StoreImage(img *Image, jsonData []byte, layerData archive.ArchiveReader, root, layer string) error {
-	// Store the layer
-	var (
-		size   int64
-		err    error
-		driver = img.graph.Driver()
-	)
-	if err := os.MkdirAll(layer, 0755); err != nil {
-		return err
-	}
-
-	// If layerData is not nil, unpack it into the new layer
-	if layerData != nil {
-		if differ, ok := driver.(graphdriver.Differ); ok {
-			if err := differ.ApplyDiff(img.ID, layerData); err != nil {
-				return err
-			}
-
-			if size, err = differ.DiffSize(img.ID); err != nil {
-				return err
-			}
-		} else {
-			start := time.Now().UTC()
-			utils.Debugf("Start untar layer")
-			if err := archive.ApplyLayer(layer, layerData); err != nil {
-				return err
-			}
-			utils.Debugf("Untar time: %vs", time.Now().UTC().Sub(start).Seconds())
-
-			if img.Parent == "" {
-				if size, err = utils.TreeSize(layer); err != nil {
-					return err
-				}
-			} else {
-				parent, err := driver.Get(img.Parent)
-				if err != nil {
-					return err
-				}
-				defer driver.Put(img.Parent)
-				changes, err := archive.ChangesDirs(layer, parent)
-				if err != nil {
-					return err
-				}
-				size = archive.ChangesSize(layer, changes)
-			}
-		}
-	}
-
-	img.Size = size
-	if err := img.SaveSize(root); err != nil {
-		return err
-	}
-
-	// If raw json is provided, then use it
-	if jsonData != nil {
-		if err := ioutil.WriteFile(jsonPath(root), jsonData, 0600); err != nil {
-			return err
-		}
-	} else {
-		if jsonData, err = json.Marshal(img); err != nil {
-			return err
-		}
-		if err := ioutil.WriteFile(jsonPath(root), jsonData, 0600); err != nil {
-			return err
-		}
-	}
-	return nil
 }
 
 func (img *Image) SetGraph(graph Graph) {
@@ -143,10 +48,6 @@ func (img *Image) SaveSize(root string) error {
 		return fmt.Errorf("Error storing image size in %s/layersize: %s", root, err)
 	}
 	return nil
-}
-
-func jsonPath(root string) string {
-	return path.Join(root, "json")
 }
 
 // TarLayer returns a tar archive of the image's filesystem layer.
@@ -187,6 +88,7 @@ func (img *Image) TarLayer() (arch archive.Archive, err error) {
 		return nil, err
 	}
 	defer driver.Put(img.Parent)
+
 	changes, err := archive.ChangesDirs(imgFs, parentFs)
 	if err != nil {
 		return nil, err
@@ -277,16 +179,4 @@ func (img *Image) Depth() (int, error) {
 		}
 	}
 	return count, nil
-}
-
-// Build an Image object from raw json data
-func NewImgJSON(src []byte) (*Image, error) {
-	ret := &Image{}
-
-	utils.Debugf("Json string: {%s}", src)
-	// FIXME: Is there a cleaner way to "purify" the input json?
-	if err := json.Unmarshal(src, ret); err != nil {
-		return nil, err
-	}
-	return ret, nil
 }
