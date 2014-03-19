@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"flag"
 	"github.com/dotcloud/docker/pkg/libcontainer"
-	"github.com/dotcloud/docker/pkg/libcontainer/nsinit"
+	"github.com/dotcloud/docker/pkg/libcontainer/namespaces"
 	"io"
 	"io/ioutil"
 	"log"
@@ -59,7 +59,7 @@ func main() {
 		if nspid > 0 {
 			exitCode, err = ns.ExecIn(container, nspid, flag.Args()[1:])
 		} else {
-			term := nsinit.NewTerminal(os.Stdin, os.Stdout, os.Stderr, container.Tty)
+			term := namespaces.NewTerminal(os.Stdin, os.Stdout, os.Stderr, container.Tty)
 			exitCode, err = ns.Exec(container, term, flag.Args()[1:])
 		}
 		if err != nil {
@@ -74,7 +74,7 @@ func main() {
 		if flag.NArg() < 2 {
 			l.Fatalf("wrong number of argments %d", flag.NArg())
 		}
-		syncPipe, err := nsinit.NewSyncPipeFromFd(0, uintptr(pipeFd))
+		syncPipe, err := namespaces.NewSyncPipeFromFd(0, uintptr(pipeFd))
 		if err != nil {
 			l.Fatalf("Unable to create sync pipe: %s", err)
 		}
@@ -112,8 +112,8 @@ func readPid() (int, error) {
 	return pid, nil
 }
 
-func newNsInit(l *log.Logger) (nsinit.NsInit, error) {
-	return nsinit.NewNsInit(&nsinit.DefaultCommandFactory{root}, &nsinit.DefaultStateWriter{root}, l), nil
+func newNsInit(l *log.Logger) (namespaces.NsInit, error) {
+	return namespaces.NewNsInit(&namespaces.DefaultCommandFactory{root}, &namespaces.DefaultStateWriter{root}, l), nil
 }
 
 func getLogger(prefix string) (*log.Logger, error) {
