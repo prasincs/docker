@@ -39,23 +39,9 @@ func setupNewMountNamespace(rootfs string, bindMounts []libcontainer.Mount, cons
 	if err := mountSystem(rootfs); err != nil {
 		return fmt.Errorf("mount system %s", err)
 	}
-
-	for _, m := range bindMounts {
-		flags := syscall.MS_BIND | syscall.MS_REC
-		if !m.Writable {
-			flags = flags | syscall.MS_RDONLY
-		}
-		dest := filepath.Join(rootfs, m.Destination)
-		if err := system.Mount(m.Source, dest, "bind", uintptr(flags), ""); err != nil {
-			return fmt.Errorf("mounting %s into %s %s", m.Source, dest, err)
-		}
-		if m.Private {
-			if err := system.Mount("", dest, "none", uintptr(syscall.MS_PRIVATE), ""); err != nil {
-				return fmt.Errorf("mounting %s private %s", dest, err)
-			}
-		}
+	if err := bindMount(rootfs, bindMounts); err != nil {
+		return err
 	}
-
 	if err := copyDevNodes(rootfs); err != nil {
 		return fmt.Errorf("copy dev nodes %s", err)
 	}
@@ -70,7 +56,6 @@ func setupNewMountNamespace(rootfs string, bindMounts []libcontainer.Mount, cons
 	if err := system.Chdir(rootfs); err != nil {
 		return fmt.Errorf("chdir into %s %s", rootfs, err)
 	}
-
 	if noPivotRoot {
 		if err := rootMsMove(rootfs); err != nil {
 			return err
@@ -289,6 +274,25 @@ func remountSys() error {
 	} else {
 		if err := system.Mount("sysfs", "/sys", "sysfs", uintptr(defaultMountFlags), ""); err != nil {
 			return err
+		}
+	}
+	return nil
+}
+
+func bindMount(rootfs string, bindMounts []libcontainer.Mount) error {
+	for _, m := range bindMounts {
+		flags := syscall.MS_BIND | syscall.MS_REC
+		if !m.Writable {
+			flags = flags | syscall.MS_RDONLY
+		}
+		dest := filepath.Join(rootfs, m.Destination)
+		if err := system.Mount(m.Source, dest, "bind", uintptr(flags), ""); err != nil {
+			return fmt.Errorf("mounting %s into %s %s", m.Source, dest, err)
+		}
+		if m.Private {
+			if err := system.Mount("", dest, "none", uintptr(syscall.MS_PRIVATE), ""); err != nil {
+				return fmt.Errorf("mounting %s private %s", dest, err)
+			}
 		}
 	}
 	return nil
