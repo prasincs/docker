@@ -1,4 +1,4 @@
-package namespaces
+package utils
 
 import (
 	"encoding/json"
@@ -8,28 +8,28 @@ import (
 	"os"
 )
 
-// SyncPipe allows communication to and from the child processes
-// to it's parent and allows the two independent processes to
+// SyncPipe allows communication to and from the Child processes
+// to it's Parent and allows the two independent processes to
 // syncronize their state.
 type SyncPipe struct {
-	parent, child *os.File
+	Parent, Child *os.File
 }
 
 func NewSyncPipe() (s *SyncPipe, err error) {
 	s = &SyncPipe{}
-	s.child, s.parent, err = os.Pipe()
+	s.Child, s.Parent, err = os.Pipe()
 	if err != nil {
 		return nil, err
 	}
 	return s, nil
 }
 
-func NewSyncPipeFromFd(parendFd, childFd uintptr) (*SyncPipe, error) {
+func NewSyncPipeFromFd(parendFd, ChildFd uintptr) (*SyncPipe, error) {
 	s := &SyncPipe{}
 	if parendFd > 0 {
-		s.parent = os.NewFile(parendFd, "parendPipe")
-	} else if childFd > 0 {
-		s.child = os.NewFile(childFd, "childPipe")
+		s.Parent = os.NewFile(parendFd, "parendPipe")
+	} else if ChildFd > 0 {
+		s.Child = os.NewFile(ChildFd, "ChildPipe")
 	} else {
 		return nil, fmt.Errorf("no valid sync pipe fd specified")
 	}
@@ -41,12 +41,12 @@ func (s *SyncPipe) SendToChild(context libcontainer.Context) error {
 	if err != nil {
 		return err
 	}
-	s.parent.Write(data)
+	s.Parent.Write(data)
 	return nil
 }
 
 func (s *SyncPipe) ReadFromParent() (libcontainer.Context, error) {
-	data, err := ioutil.ReadAll(s.child)
+	data, err := ioutil.ReadAll(s.Child)
 	if err != nil {
 		return nil, fmt.Errorf("error reading from sync pipe %s", err)
 	}
@@ -61,11 +61,11 @@ func (s *SyncPipe) ReadFromParent() (libcontainer.Context, error) {
 }
 
 func (s *SyncPipe) Close() error {
-	if s.parent != nil {
-		s.parent.Close()
+	if s.Parent != nil {
+		s.Parent.Close()
 	}
-	if s.child != nil {
-		s.child.Close()
+	if s.Child != nil {
+		s.Child.Close()
 	}
 	return nil
 }

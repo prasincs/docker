@@ -2,6 +2,7 @@ package namespaces
 
 import (
 	"github.com/dotcloud/docker/pkg/libcontainer"
+	"github.com/dotcloud/docker/pkg/libcontainer/utils"
 	"log"
 )
 
@@ -10,7 +11,7 @@ import (
 type NsInit interface {
 	Exec(container *libcontainer.Container, term Terminal, args []string) (int, error)
 	ExecIn(container *libcontainer.Container, nspid int, args []string) (int, error)
-	Init(container *libcontainer.Container, uncleanRootfs, console string, syncPipe *SyncPipe, args []string) error
+	Init(container *libcontainer.Container, uncleanRootfs, console string, syncPipe *utils.SyncPipe, args []string) error
 }
 
 type linuxNs struct {

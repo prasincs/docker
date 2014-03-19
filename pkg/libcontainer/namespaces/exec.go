@@ -5,6 +5,7 @@ package namespaces
 import (
 	"github.com/dotcloud/docker/pkg/libcontainer"
 	"github.com/dotcloud/docker/pkg/libcontainer/network"
+	"github.com/dotcloud/docker/pkg/libcontainer/utils"
 	"github.com/dotcloud/docker/pkg/system"
 	"os"
 	"os/exec"
@@ -22,11 +23,11 @@ func (ns *linuxNs) Exec(container *libcontainer.Container, term Terminal, args [
 
 	// create a pipe so that we can syncronize with the namespaced process and
 	// pass the veth name to the child
-	syncPipe, err := NewSyncPipe()
+	syncPipe, err := utils.NewSyncPipe()
 	if err != nil {
 		return -1, err
 	}
-	ns.logger.Printf("created sync pipe parent fd %d child fd %d\n", syncPipe.parent.Fd(), syncPipe.child.Fd())
+	ns.logger.Printf("created sync pipe parent fd %d child fd %d\n", syncPipe.Parent.Fd(), syncPipe.Child.Fd())
 
 	if container.Tty {
 		ns.logger.Println("creating master and console")
@@ -37,7 +38,7 @@ func (ns *linuxNs) Exec(container *libcontainer.Container, term Terminal, args [
 		term.SetMaster(master)
 	}
 
-	command := ns.commandFactory.Create(container, console, syncPipe.child, args)
+	command := ns.commandFactory.Create(container, console, syncPipe.Child, args)
 	ns.logger.Println("attach terminal to command")
 	if err := term.Attach(command); err != nil {
 		return -1, err
@@ -94,7 +95,7 @@ func (ns *linuxNs) SetupCgroups(container *libcontainer.Container, nspid int) er
 	return nil
 }
 
-func (ns *linuxNs) InitializeNetworking(container *libcontainer.Container, nspid int, pipe *SyncPipe) error {
+func (ns *linuxNs) InitializeNetworking(container *libcontainer.Container, nspid int, pipe *utils.SyncPipe) error {
 	context := libcontainer.Context{}
 	for _, config := range container.Networks {
 		strategy, err := network.GetStrategy(config.Type)

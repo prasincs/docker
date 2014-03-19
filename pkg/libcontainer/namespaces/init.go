@@ -17,14 +17,14 @@ import (
 
 // Init is the init process that first runs inside a new namespace to setup mounts, users, networking,
 // and other options required for the new container.
-func (ns *linuxNs) Init(container *libcontainer.Container, uncleanRootfs, console string, syncPipe *SyncPipe, args []string) error {
+func (ns *linuxNs) Init(container *libcontainer.Container, uncleanRootfs, console string, syncPipe *utils.SyncPipe, args []string) error {
 	rootfs, err := utils.ResolveRootfs(uncleanRootfs)
 	if err != nil {
 		return err
 	}
 
 	// We always read this as it is a way to sync with the parent as well
-	ns.logger.Printf("reading from sync pipe fd %d\n", syncPipe.child.Fd())
+	ns.logger.Printf("reading from sync pipe fd %d\n", syncPipe.Child.Fd())
 	context, err := syncPipe.ReadFromParent()
 	if err != nil {
 		syncPipe.Close()

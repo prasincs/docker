@@ -5,6 +5,7 @@ import (
 	"flag"
 	"github.com/dotcloud/docker/pkg/libcontainer"
 	"github.com/dotcloud/docker/pkg/libcontainer/namespaces"
+	"github.com/dotcloud/docker/pkg/libcontainer/utils"
 	"io"
 	"io/ioutil"
 	"log"
@@ -74,7 +75,7 @@ func main() {
 		if flag.NArg() < 2 {
 			l.Fatalf("wrong number of argments %d", flag.NArg())
 		}
-		syncPipe, err := namespaces.NewSyncPipeFromFd(0, uintptr(pipeFd))
+		syncPipe, err := utils.NewSyncPipeFromFd(0, uintptr(pipeFd))
 		if err != nil {
 			l.Fatalf("Unable to create sync pipe: %s", err)
 		}
