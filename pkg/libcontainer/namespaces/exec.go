@@ -67,7 +67,12 @@ func (ns *linuxNs) Exec(container *libcontainer.Container, term Terminal, args [
 		return -1, err
 	}
 	ns.logger.Println("setting up network")
-	if err := ns.InitializeNetworking(container, command.Process.Pid, syncPipe); err != nil {
+	context, err := network.CreateNetworks(container, command.Process.Pid)
+	if err != nil {
+		command.Process.Kill()
+		return -1, err
+	}
+	if err := syncPipe.SendToChild(context); err != nil {
 		command.Process.Kill()
 		return -1, err
 	}
@@ -93,18 +98,4 @@ func (ns *linuxNs) SetupCgroups(container *libcontainer.Container, nspid int) er
 		}
 	}
 	return nil
-}
-
-func (ns *linuxNs) InitializeNetworking(container *libcontainer.Container, nspid int, pipe *utils.SyncPipe) error {
-	context := libcontainer.Context{}
-	for _, config := range container.Networks {
-		strategy, err := network.GetStrategy(config.Type)
-		if err != nil {
-			return err
-		}
-		if err := strategy.Create(config, nspid, context); err != nil {
-			return err
-		}
-	}
-	return pipe.SendToChild(context)
 }
