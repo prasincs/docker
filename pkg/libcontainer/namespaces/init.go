@@ -8,9 +8,9 @@ import (
 	"github.com/dotcloud/docker/pkg/libcontainer/apparmor"
 	"github.com/dotcloud/docker/pkg/libcontainer/capabilities"
 	"github.com/dotcloud/docker/pkg/libcontainer/network"
+	"github.com/dotcloud/docker/pkg/libcontainer/user"
 	"github.com/dotcloud/docker/pkg/libcontainer/utils"
 	"github.com/dotcloud/docker/pkg/system"
-	"github.com/dotcloud/docker/pkg/user"
 	"os"
 	"syscall"
 )
@@ -57,7 +57,7 @@ func (ns *linuxNs) Init(container *libcontainer.Container, uncleanRootfs, consol
 		return fmt.Errorf("parent death signal %s", err)
 	}
 	ns.logger.Println("setup mount namespace")
-	if err := setupNewMountNamespace(rootfs, container.Mounts, console, container.ReadonlyFs, container.NoPivotRoot); err != nil {
+	if err := SetupNewMountNamespace(rootfs, console, container); err != nil {
 		return fmt.Errorf("setup mount namespace %s", err)
 	}
 	if err := setupNetwork(container, context); err != nil {
@@ -78,36 +78,6 @@ func (ns *linuxNs) Init(container *libcontainer.Container, uncleanRootfs, consol
 	}
 	ns.logger.Printf("execing %s\n", args[0])
 	return system.Execv(args[0], args[0:], container.Env)
-}
-
-func setupUser(container *libcontainer.Container) error {
-	switch container.User {
-	case "root", "":
-		if err := system.Setgroups(nil); err != nil {
-			return err
-		}
-		if err := system.Setresgid(0, 0, 0); err != nil {
-			return err
-		}
-		if err := system.Setresuid(0, 0, 0); err != nil {
-			return err
-		}
-	default:
-		uid, gid, suppGids, err := user.GetUserGroupSupplementary(container.User, syscall.Getuid(), syscall.Getgid())
-		if err != nil {
-			return err
-		}
-		if err := system.Setgroups(suppGids); err != nil {
-			return err
-		}
-		if err := system.Setgid(gid); err != nil {
-			return err
-		}
-		if err := system.Setuid(uid); err != nil {
-			return err
-		}
-	}
-	return nil
 }
 
 // dupSlave dup2 the pty slave's fd into stdout and stdin and ensures that
@@ -149,7 +119,7 @@ func finalizeNamespace(container *libcontainer.Container) error {
 	if err := capabilities.DropCapabilities(container); err != nil {
 		return fmt.Errorf("drop capabilities %s", err)
 	}
-	if err := setupUser(container); err != nil {
+	if err := user.SetupUser(container); err != nil {
 		return fmt.Errorf("setup user %s", err)
 	}
 	if container.WorkingDir != "" {

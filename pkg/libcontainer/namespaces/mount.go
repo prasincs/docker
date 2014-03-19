@@ -15,14 +15,14 @@ import (
 // default mount point flags
 const defaultMountFlags = syscall.MS_NOEXEC | syscall.MS_NOSUID | syscall.MS_NODEV
 
-// setupNewMountNamespace is used to initialize a new mount namespace for an new
+// SetupNewMountNamespace is used to initialize a new mount namespace for an new
 // container in the rootfs that is specified.
 //
 // There is no need to unmount the new mounts because as soon as the mount namespace
 // is no longer in use, the mounts will be removed automatically
-func setupNewMountNamespace(rootfs string, bindMounts []libcontainer.Mount, console string, readonly, noPivotRoot bool) error {
+func SetupNewMountNamespace(rootfs, console string, container *libcontainer.Container) error {
 	flag := syscall.MS_PRIVATE
-	if noPivotRoot {
+	if container.NoPivotRoot {
 		flag = syscall.MS_SLAVE
 	}
 	if err := system.Mount("", "/", "", uintptr(flag|syscall.MS_REC), ""); err != nil {
@@ -31,7 +31,7 @@ func setupNewMountNamespace(rootfs string, bindMounts []libcontainer.Mount, cons
 	if err := system.Mount(rootfs, rootfs, "bind", syscall.MS_BIND|syscall.MS_REC, ""); err != nil {
 		return fmt.Errorf("mouting %s as bind %s", rootfs, err)
 	}
-	if readonly {
+	if container.ReadonlyFs {
 		if err := system.Mount(rootfs, rootfs, "bind", syscall.MS_BIND|syscall.MS_REMOUNT|syscall.MS_RDONLY|syscall.MS_REC, ""); err != nil {
 			return fmt.Errorf("mounting %s as readonly %s", rootfs, err)
 		}
@@ -39,7 +39,7 @@ func setupNewMountNamespace(rootfs string, bindMounts []libcontainer.Mount, cons
 	if err := mountSystem(rootfs); err != nil {
 		return fmt.Errorf("mount system %s", err)
 	}
-	if err := bindMount(rootfs, bindMounts); err != nil {
+	if err := bindMount(rootfs, container.Mounts); err != nil {
 		return err
 	}
 	if err := copyDevNodes(rootfs); err != nil {
@@ -56,6 +56,15 @@ func setupNewMountNamespace(rootfs string, bindMounts []libcontainer.Mount, cons
 	if err := system.Chdir(rootfs); err != nil {
 		return fmt.Errorf("chdir into %s %s", rootfs, err)
 	}
+	if err := jailRoot(rootfs, container.NoPivotRoot); err != nil {
+		return err
+	}
+	system.Umask(0022)
+
+	return nil
+}
+
+func jailRoot(rootfs string, noPivotRoot bool) error {
 	if noPivotRoot {
 		if err := rootMsMove(rootfs); err != nil {
 			return err
@@ -65,9 +74,6 @@ func setupNewMountNamespace(rootfs string, bindMounts []libcontainer.Mount, cons
 			return err
 		}
 	}
-
-	system.Umask(0022)
-
 	return nil
 }
 
