@@ -8,7 +8,7 @@ import (
 
 func reset() {
 	allocatedIPs = networkSet{}
-	availableIPS = networkSet{}
+	lastAllocated = int32(0)
 }
 
 func TestRequestNewIps(t *testing.T) {
@@ -18,8 +18,10 @@ func TestRequestNewIps(t *testing.T) {
 		Mask: []byte{255, 255, 255, 0},
 	}
 
+	var ip *net.IP
+	var err error
 	for i := 2; i < 10; i++ {
-		ip, err := RequestIP(network, nil)
+		ip, err = RequestIP(network, nil)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -27,6 +29,17 @@ func TestRequestNewIps(t *testing.T) {
 		if expected := fmt.Sprintf("192.168.0.%d", i); ip.String() != expected {
 			t.Fatalf("Expected ip %s got %s", expected, ip.String())
 		}
+	}
+	value := intToIP(ipToInt(ip) + 1).String()
+	if err := ReleaseIP(network, ip); err != nil {
+		t.Fatal(err)
+	}
+	ip, err = RequestIP(network, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if ip.String() != value {
+		t.Fatalf("Expected to receive the next ip %s got %s", value, ip.String())
 	}
 }
 
@@ -62,6 +75,17 @@ func TestGetReleasedIp(t *testing.T) {
 	value := ip.String()
 	if err := ReleaseIP(network, ip); err != nil {
 		t.Fatal(err)
+	}
+
+	for i := 0; i < 252; i++ {
+		_, err = RequestIP(network, nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		err = ReleaseIP(network, ip)
+		if err != nil {
+			t.Fatal(err)
+		}
 	}
 
 	ip, err = RequestIP(network, nil)
@@ -185,24 +209,6 @@ func TestIPAllocator(t *testing.T) {
 
 		newIPs[i] = ip
 	}
-	// Before loop begin
-	// 2(u) - 3(u) - 4(f) - 5(f) - 6(f)
-	//                       ↑
-
-	// After i = 0
-	// 2(u) - 3(u) - 4(f) - 5(u) - 6(f)
-	//                              ↑
-
-	// After i = 1
-	// 2(u) - 3(u) - 4(f) - 5(u) - 6(u)
-	//                ↑
-
-	// After i = 2
-	// 2(u) - 3(u) - 4(u) - 5(u) - 6(u)
-	//                       ↑
-
-	// Reordered these because the new set will always return the
-	// lowest ips first and not in the order that they were released
 	assertIPEquals(t, &expectedIPs[2], newIPs[0])
 	assertIPEquals(t, &expectedIPs[3], newIPs[1])
 	assertIPEquals(t, &expectedIPs[4], newIPs[2])
