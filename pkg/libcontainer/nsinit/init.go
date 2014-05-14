@@ -4,6 +4,7 @@ package nsinit
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
 	"runtime"
 	"strings"
@@ -85,9 +86,45 @@ func Init(container *libcontainer.Container, uncleanRootfs, consolePath string, 
 			return err
 		}
 	}
-	if err := FinalizeNamespace(container); err != nil {
-		return fmt.Errorf("finalize namespace %s", err)
+
+	ns, err := NewSyncPipe()
+	if err != nil {
+		panic(err)
 	}
+	pid, err := system.Clone(uintptr(syscall.CLONE_NEWUSER | syscall.CLONE_FILES | syscall.SIGCHLD))
+	if err != nil {
+		return fmt.Errorf("userns clone %s", err)
+	}
+
+	if pid != 0 {
+		mapping := []byte("0 1337 1")
+
+		proc, err := os.FindProcess(pid)
+		if err != nil {
+			return err
+		}
+
+		if err := writeUserMapping(pid, mapping); err != nil {
+			proc.Kill()
+			return err
+		}
+
+		ns.Close()
+
+		state, err := proc.Wait()
+		if err != nil {
+			proc.Kill()
+			return err
+		}
+		os.Exit(state.Sys().(syscall.WaitStatus).ExitStatus())
+	}
+
+	ns.ReadFromParent()
+	/*
+		if err := FinalizeNamespace(container); err != nil {
+			return fmt.Errorf("finalize namespace %s", err)
+		}
+	*/
 	return system.Execv(args[0], args[0:], container.Env)
 }
 
@@ -153,6 +190,18 @@ func LoadContainerEnvironment(container *libcontainer.Container) error {
 	for _, pair := range container.Env {
 		p := strings.SplitN(pair, "=", 2)
 		if err := os.Setenv(p[0], p[1]); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func writeUserMapping(pid int, mapping []byte) error {
+	for _, p := range []string{
+		fmt.Sprintf("/proc/%d/uid_map", pid),
+		fmt.Sprintf("/proc/%d/gid_map", pid),
+	} {
+		if err := ioutil.WriteFile(p, mapping, 0644); err != nil {
 			return err
 		}
 	}
