@@ -240,6 +240,47 @@ func TestAllocateFirstIP(t *testing.T) {
 	}
 }
 
+func TestAllocateAllIps(t *testing.T) {
+	defer reset()
+	network := &net.IPNet{
+		IP:   []byte{192, 168, 0, 1},
+		Mask: []byte{255, 255, 255, 0},
+	}
+
+	var (
+		current, first *net.IP
+		err            error
+		isFirst        = true
+	)
+
+	for err == nil {
+		current, err = RequestIP(network, nil)
+		if isFirst {
+			first = current
+			isFirst = false
+		}
+	}
+
+	if err != ErrNoAvailableIPs {
+		t.Fatal(err)
+	}
+
+	if _, err := RequestIP(network, nil); err != ErrNoAvailableIPs {
+		t.Fatal(err)
+	}
+
+	if err := ReleaseIP(network, first); err != nil {
+		t.Fatal(err)
+	}
+
+	again, err := RequestIP(network, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	assertIPEquals(t, first, again)
+}
+
 func assertIPEquals(t *testing.T, ip1, ip2 *net.IP) {
 	if !ip1.Equal(*ip2) {
 		t.Fatalf("Expected IP %s, got %s", ip1, ip2)
