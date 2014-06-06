@@ -14,8 +14,8 @@ import (
 
 // Setup initializes the proper /dev/console inside the rootfs path
 func Setup(rootfs, consolePath, mountLabel string) error {
-	oldMask := system.Umask(0000)
-	defer system.Umask(oldMask)
+	oldMask := syscall.Umask(0000)
+	defer syscall.Umask(oldMask)
 
 	if err := os.Chmod(consolePath, 0600); err != nil {
 		return err
@@ -37,7 +37,7 @@ func Setup(rootfs, consolePath, mountLabel string) error {
 		f.Close()
 	}
 
-	if err := system.Mount(consolePath, dest, "bind", syscall.MS_BIND, ""); err != nil {
+	if err := syscall.Mount(consolePath, dest, "bind", syscall.MS_BIND, ""); err != nil {
 		return fmt.Errorf("bind %s to %s %s", consolePath, dest, err)
 	}
 	return nil
@@ -48,11 +48,15 @@ func OpenAndDup(consolePath string) error {
 	if err != nil {
 		return fmt.Errorf("open terminal %s", err)
 	}
-	if err := system.Dup2(slave.Fd(), 0); err != nil {
+	slaveFd := int(slave.Fd())
+
+	if err := syscall.Dup2(slaveFd, 0); err != nil {
 		return err
 	}
-	if err := system.Dup2(slave.Fd(), 1); err != nil {
+
+	if err := syscall.Dup2(slaveFd, 1); err != nil {
 		return err
 	}
-	return system.Dup2(slave.Fd(), 2)
+
+	return syscall.Dup2(slaveFd, 2)
 }
