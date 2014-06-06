@@ -9,7 +9,6 @@ import (
 	"syscall"
 
 	"github.com/dotcloud/docker/pkg/libcontainer/pkg/label"
-	"github.com/dotcloud/docker/pkg/system"
 )
 
 // Setup initializes the proper /dev/console inside the rootfs path
@@ -44,7 +43,7 @@ func Setup(rootfs, consolePath, mountLabel string) error {
 }
 
 func OpenAndDup(consolePath string) error {
-	slave, err := system.OpenTerminal(consolePath, syscall.O_RDWR)
+	slave, err := OpenTerminal(consolePath, syscall.O_RDWR)
 	if err != nil {
 		return fmt.Errorf("open terminal %s", err)
 	}
