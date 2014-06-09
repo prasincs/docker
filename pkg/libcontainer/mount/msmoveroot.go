@@ -4,7 +4,7 @@ package mount
 
 import (
 	"fmt"
-	"github.com/dotcloud/docker/pkg/libcontainer/system"
+	"github.com/dotcloud/docker/pkg/libcontainer/pkg/system"
 	"syscall"
 )
 

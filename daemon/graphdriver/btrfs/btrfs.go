@@ -17,7 +17,7 @@ import (
 	"unsafe"
 
 	"github.com/dotcloud/docker/daemon/graphdriver"
-	"github.com/dotcloud/docker/pkg/mount"
+	"github.com/dotcloud/docker/pkg/libcontainer/pkg/mount"
 )
 
 func init() {

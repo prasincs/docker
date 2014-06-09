@@ -7,7 +7,7 @@ import (
 	"path"
 
 	"github.com/dotcloud/docker/archive"
-	"github.com/dotcloud/docker/pkg/mount"
+	"github.com/dotcloud/docker/pkg/libcontainer/pkg/mount"
 )
 
 type FsMagic uint64

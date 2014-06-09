@@ -10,7 +10,7 @@ import (
 
 	"github.com/dotcloud/docker/archive"
 	"github.com/dotcloud/docker/daemon/execdriver"
-	"github.com/dotcloud/docker/pkg/libcontainer/symlink"
+	"github.com/dotcloud/docker/pkg/libcontainer/pkg/symlink"
 )
 
 type BindMap struct {

@@ -32,8 +32,8 @@ import (
 
 	"github.com/dotcloud/docker/archive"
 	"github.com/dotcloud/docker/daemon/graphdriver"
-	"github.com/dotcloud/docker/pkg/libcontainer/label"
-	mountpk "github.com/dotcloud/docker/pkg/mount"
+	"github.com/dotcloud/docker/pkg/libcontainer/pkg/label"
+	mountpk "github.com/dotcloud/docker/pkg/libcontainer/pkg/mount"
 	"github.com/dotcloud/docker/utils"
 )
 

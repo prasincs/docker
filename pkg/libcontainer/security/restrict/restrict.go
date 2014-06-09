@@ -8,7 +8,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/dotcloud/docker/pkg/libcontainer/system"
+	"github.com/dotcloud/docker/pkg/libcontainer/pkg/system"
 )
 
 const defaultMountFlags = syscall.MS_NOEXEC | syscall.MS_NOSUID | syscall.MS_NODEV

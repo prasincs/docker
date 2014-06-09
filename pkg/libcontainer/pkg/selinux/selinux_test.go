@@ -1,7 +1,7 @@
 package selinux_test
 
 import (
-	"github.com/dotcloud/docker/pkg/libcontainer/selinux"
+	"github.com/dotcloud/docker/pkg/libcontainer/pkg/selinux"
 	"os"
 	"testing"
 )

@@ -6,7 +6,7 @@ import (
 	"syscall"
 
 	"github.com/dotcloud/docker/pkg/libcontainer"
-	"github.com/dotcloud/docker/pkg/libcontainer/system"
+	"github.com/dotcloud/docker/pkg/libcontainer/pkg/system"
 )
 
 //  crosbymichael: could make a network strategy that instead of returning veth pair names it returns a pid to an existing network namespace

@@ -16,7 +16,7 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/dotcloud/docker/pkg/libcontainer/system"
+	"github.com/dotcloud/docker/pkg/libcontainer/pkg/system"
 	"github.com/dotcloud/docker/utils"
 	"github.com/dotcloud/docker/vendor/src/code.google.com/p/go/src/pkg/archive/tar"
 )

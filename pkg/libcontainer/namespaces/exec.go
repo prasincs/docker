@@ -12,7 +12,7 @@ import (
 	"github.com/dotcloud/docker/pkg/libcontainer/cgroups/fs"
 	"github.com/dotcloud/docker/pkg/libcontainer/cgroups/systemd"
 	"github.com/dotcloud/docker/pkg/libcontainer/network"
-	"github.com/dotcloud/docker/pkg/libcontainer/system"
+	"github.com/dotcloud/docker/pkg/libcontainer/pkg/system"
 )
 
 // Exec performes setup outside of a namespace so that a container can be

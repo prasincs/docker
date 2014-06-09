@@ -24,8 +24,8 @@ import (
 
 	"github.com/dotcloud/docker/api"
 	"github.com/dotcloud/docker/engine"
-	"github.com/dotcloud/docker/pkg/libcontainer/systemd"
-	"github.com/dotcloud/docker/pkg/libcontainer/user"
+	"github.com/dotcloud/docker/pkg/libcontainer/pkg/systemd"
+	"github.com/dotcloud/docker/pkg/libcontainer/pkg/user"
 	"github.com/dotcloud/docker/pkg/listenbuffer"
 	"github.com/dotcloud/docker/pkg/version"
 	"github.com/dotcloud/docker/registry"
