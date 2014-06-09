@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/dotcloud/docker/pkg/beam"
 	"github.com/dotcloud/docker/pkg/beam/data"
-	"github.com/dotcloud/docker/pkg/term"
+	"github.com/dotcloud/docker/pkg/libcontainer/pkg/term"
 	"github.com/dotcloud/docker/utils"
 	"io"
 	"net"

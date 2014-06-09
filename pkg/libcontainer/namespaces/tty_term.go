@@ -5,7 +5,7 @@ import (
 	"os"
 	"os/exec"
 
-	"github.com/dotcloud/docker/pkg/term"
+	"github.com/dotcloud/docker/pkg/libcontainer/pkg/term"
 )
 
 type TtyTerminal struct {

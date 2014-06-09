@@ -7,7 +7,7 @@ import (
 	"github.com/dotcloud/docker/pkg/beam"
 	"github.com/dotcloud/docker/pkg/beam/data"
 	"github.com/dotcloud/docker/pkg/dockerscript"
-	"github.com/dotcloud/docker/pkg/term"
+	"github.com/dotcloud/docker/pkg/libcontainer/pkg/term"
 	"io"
 	"net"
 	"net/url"

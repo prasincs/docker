@@ -28,7 +28,7 @@ import (
 	"github.com/dotcloud/docker/nat"
 	"github.com/dotcloud/docker/opts"
 	"github.com/dotcloud/docker/pkg/signal"
-	"github.com/dotcloud/docker/pkg/term"
+	"github.com/dotcloud/docker/pkg/libcontainer/pkg/term"
 	"github.com/dotcloud/docker/pkg/units"
 	"github.com/dotcloud/docker/registry"
 	"github.com/dotcloud/docker/runconfig"

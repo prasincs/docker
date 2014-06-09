@@ -1,7 +1,7 @@
 package execdriver
 
 import (
-	"github.com/dotcloud/docker/pkg/term"
+	"github.com/dotcloud/docker/pkg/libcontainer/pkg/term"
 	"github.com/kr/pty"
 	"io"
 	"os"

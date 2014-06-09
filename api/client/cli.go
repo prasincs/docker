@@ -11,7 +11,7 @@ import (
 	"text/template"
 
 	flag "github.com/dotcloud/docker/pkg/mflag"
-	"github.com/dotcloud/docker/pkg/term"
+	"github.com/dotcloud/docker/pkg/libcontainer/pkg/term"
 	"github.com/dotcloud/docker/registry"
 )
 

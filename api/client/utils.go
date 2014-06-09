@@ -20,7 +20,7 @@ import (
 	"github.com/dotcloud/docker/api"
 	"github.com/dotcloud/docker/dockerversion"
 	"github.com/dotcloud/docker/engine"
-	"github.com/dotcloud/docker/pkg/term"
+	"github.com/dotcloud/docker/pkg/libcontainer/pkg/term"
 	"github.com/dotcloud/docker/registry"
 	"github.com/dotcloud/docker/utils"
 )
