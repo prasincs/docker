@@ -3,7 +3,7 @@
 package mount
 
 import (
-	"github.com/dotcloud/docker/pkg/system"
+	"github.com/dotcloud/docker/pkg/libcontainer/system"
 	"syscall"
 )
 

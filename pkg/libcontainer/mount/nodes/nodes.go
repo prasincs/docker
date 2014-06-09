@@ -9,7 +9,7 @@ import (
 	"syscall"
 
 	"github.com/dotcloud/docker/pkg/libcontainer/devices"
-	"github.com/dotcloud/docker/pkg/system"
+	"github.com/dotcloud/docker/pkg/libcontainer/system"
 )
 
 // Create the device nodes in the container.

@@ -10,8 +10,8 @@ import (
 	"syscall"
 
 	"github.com/dotcloud/docker/daemon/execdriver"
-	"github.com/dotcloud/docker/pkg/netlink"
-	"github.com/dotcloud/docker/pkg/user"
+	"github.com/dotcloud/docker/pkg/libcontainer/netlink"
+	"github.com/dotcloud/docker/pkg/libcontainer/user"
 	"github.com/syndtr/gocapability/capability"
 )
 

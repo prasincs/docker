@@ -8,8 +8,8 @@ import (
 	"path/filepath"
 	"syscall"
 
-	"github.com/dotcloud/docker/pkg/label"
-	"github.com/dotcloud/docker/pkg/system"
+	"github.com/dotcloud/docker/pkg/libcontainer/label"
+	"github.com/dotcloud/docker/pkg/libcontainer/system"
 )
 
 // Setup initializes the proper /dev/console inside the rootfs path

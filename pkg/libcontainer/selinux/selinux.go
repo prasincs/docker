@@ -6,7 +6,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"github.com/dotcloud/docker/pkg/mount"
-	"github.com/dotcloud/docker/pkg/system"
+	"github.com/dotcloud/docker/pkg/libcontainer/system"
 	"io"
 	"os"
 	"regexp"
