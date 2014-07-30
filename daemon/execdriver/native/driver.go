@@ -60,6 +60,26 @@ func init() {
 
 		return nil
 	})
+
+	execdriver.RegisterInitFunc("nsenter", func(args *execdriver.InitArgs) error {
+		var container *libcontainer.Config
+		f, err := os.Open(filepath.Join(args.Root, "container.json"))
+		if err != nil {
+			return err
+		}
+
+		if err := json.NewDecoder(f).Decode(&container); err != nil {
+			f.Close()
+			return err
+		}
+		f.Close()
+
+		if err := namespaces.NsEnter(container, args.Args); err != nil {
+			return err
+		}
+
+		return nil
+	})
 }
 
 type activeContainer struct {
