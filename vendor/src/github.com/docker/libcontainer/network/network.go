@@ -8,6 +8,14 @@ import (
 	"github.com/docker/libcontainer/netlink"
 )
 
+func SetInterfaceInNamespaceFd(name string, fd uintptr) error {
+        iface, err := net.InterfaceByName(name)
+        if err != nil {
+                return err
+        }
+        return netlink.NetworkSetNsFd(iface, int(fd))
+}
+
 func InterfaceUp(name string) error {
 	iface, err := net.InterfaceByName(name)
 	if err != nil {

@@ -222,6 +222,15 @@ func populateCommand(c *Container, env []string) error {
 			return err
 		}
 		en.ContainerID = nc.ID
+	case "shared":
+		name := parts[1]
+		if err := links.CreateSharedLink(name); err != nil {
+			return err
+		}
+
+		path := links.GetSharedLink(name)
+
+		en.SharedNS = path
 	default:
 		return fmt.Errorf("invalid network mode: %s", c.hostConfig.NetworkMode)
 	}

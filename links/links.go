@@ -1,12 +1,30 @@
 package links
 
 import (
+	"flag"
 	"fmt"
+	"log"
+	"os"
+	"os/exec"
+	"path"
+	"path/filepath"
+	"runtime"
+	"strings"
+	"syscall"
+
 	"github.com/docker/docker/engine"
 	"github.com/docker/docker/nat"
-	"path"
-	"strings"
+	"github.com/docker/docker/reexec"
+	"github.com/docker/libcontainer/network"
+	"github.com/docker/libcontainer/system"
 )
+
+var root = "/var/lib/docker/links"
+
+func init() {
+	reexec.Register("docker-createns", createns)
+	reexec.Register("docker-setupns", setupns)
+}
 
 type Link struct {
 	ParentIP         string
@@ -16,6 +34,130 @@ type Link struct {
 	Ports            []nat.Port
 	IsEnabled        bool
 	eng              *engine.Engine
+}
+
+func CreateSharedLink(name string) error {
+	if err := os.MkdirAll(root, 0700); err != nil {
+		return err
+	}
+
+	if _, err := os.Stat(filepath.Join(root, name)); err == nil {
+		return nil
+	}
+
+	cmd := &exec.Cmd{
+		Path: reexec.Self(),
+		Args: []string{
+			"docker-createns",
+			"-path", filepath.Join(root, name),
+		},
+		Stdout: os.Stdout,
+		Stderr: os.Stderr,
+	}
+
+	if err := cmd.Run(); err != nil {
+		return err
+	}
+
+	// configure new netns
+	if err := network.CreateVethPair("vethmommy", "vethbabby"); err != nil {
+		return err
+	}
+
+	f, err := os.Open(filepath.Join(root, name))
+	if err != nil {
+		return err
+	}
+
+	if err := network.SetInterfaceMaster("vethmommy", "docker0"); err != nil {
+		return err
+	}
+
+	if err := network.InterfaceUp("vethmommy"); err != nil {
+		return err
+	}
+
+	if err := network.SetInterfaceInNamespaceFd("vethbabby", f.Fd()); err != nil {
+		return err
+	}
+
+	cmd = &exec.Cmd{
+		Path: reexec.Self(),
+		Args: []string{
+			"docker-setupns",
+		},
+		Stdout: os.Stdout,
+		Stderr: os.Stderr,
+	}
+
+	return cmd.Run()
+}
+
+func GetSharedLink(name string) string {
+	return filepath.Join(root, name)
+}
+
+func setupns() {
+	runtime.LockOSThread()
+	f, err := os.Open("/var/lib/docker/links/redis")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if err := system.Setns(f.Fd(), 0); err != nil {
+		log.Fatal(err)
+	}
+
+	if err := network.InterfaceDown("vethbabby"); err != nil {
+		log.Fatal(err)
+	}
+
+	if err := network.ChangeInterfaceName("vethbabby", "redis0"); err != nil {
+		log.Fatal(err)
+	}
+
+	if err := network.SetInterfaceIp("redis0", "10.0.42.101/16"); err != nil {
+		log.Fatal(err)
+	}
+
+	if err := network.InterfaceUp("redis0"); err != nil {
+		log.Fatal(err)
+	}
+
+	if err := network.SetDefaultGateway("10.0.42.1", "redis0"); err != nil {
+		log.Fatal(err)
+	}
+
+	if err := network.InterfaceUp("lo"); err != nil {
+		log.Fatal(err)
+	}
+
+	os.Exit(0)
+}
+
+func createns() {
+	runtime.LockOSThread()
+
+	path := flag.String("path", "", "path to bind mount file")
+	flag.Parse()
+
+	if err := syscall.Unshare(syscall.CLONE_NEWNET); err != nil {
+		log.Fatal(err)
+	}
+
+	f, err := os.Create(*path)
+	if err != nil && !os.IsExist(err) {
+		log.Fatal(err)
+	}
+	if f != nil {
+		f.Close()
+	}
+
+	if err := syscall.Mount("/proc/self/ns/net", *path, "bind", syscall.MS_BIND, ""); err != nil {
+		log.Fatal(err)
+	}
+
+	os.Exit(0)
 }
 
 func NewLink(parentIP, childIP, name string, env []string, exposedPorts map[nat.Port]struct{}, eng *engine.Engine) (*Link, error) {

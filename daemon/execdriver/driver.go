@@ -57,6 +57,7 @@ type Network struct {
 	Mtu            int               `json:"mtu"`
 	ContainerID    string            `json:"container_id"` // id of the container to join network.
 	HostNetworking bool              `json:"host_networking"`
+	SharedNS       string
 }
 
 type NetworkInterface struct {
