@@ -20,15 +20,17 @@ import (
 	"github.com/docker/docker/daemon/execdriver/lxc"
 	"github.com/docker/docker/daemon/graphdriver"
 	_ "github.com/docker/docker/daemon/graphdriver/vfs"
+	"github.com/docker/docker/daemon/loggingdriver"
 	_ "github.com/docker/docker/daemon/networkdriver/bridge"
 	"github.com/docker/docker/daemon/networkdriver/portallocator"
 	"github.com/docker/docker/dockerversion"
 	"github.com/docker/docker/engine"
 	"github.com/docker/docker/graph"
 	"github.com/docker/docker/image"
-	"github.com/docker/docker/pkg/broadcastwriter"
 	"github.com/docker/docker/pkg/graphdb"
 	"github.com/docker/docker/pkg/log"
+	"github.com/docker/docker/pkg/logmessage"
+	"github.com/docker/docker/pkg/multiwriter"
 	"github.com/docker/docker/pkg/namesgenerator"
 	"github.com/docker/docker/pkg/networkfs/resolvconf"
 	"github.com/docker/docker/pkg/parsers"
@@ -94,6 +96,7 @@ type Daemon struct {
 	containerGraph *graphdb.Database
 	driver         graphdriver.Driver
 	execDriver     execdriver.Driver
+	loggingDriver  loggingdriver.Driver
 }
 
 // Install installs daemon capabilities to eng.
@@ -195,8 +198,9 @@ func (daemon *Daemon) register(container *Container, updateSuffixarray bool) err
 	container.daemon = daemon
 
 	// Attach to stdout and stderr
-	container.stderr = broadcastwriter.New()
-	container.stdout = broadcastwriter.New()
+	container.stderr = multiwriter.NewMultiWriter()
+	container.stdout = multiwriter.NewMultiWriter()
+
 	// Attach to stdin
 	if container.Config.OpenStdin {
 		container.stdin, container.stdinPipe = io.Pipe()
@@ -273,12 +277,16 @@ func (daemon *Daemon) ensureName(container *Container) error {
 	return nil
 }
 
-func (daemon *Daemon) LogToDisk(src *broadcastwriter.BroadcastWriter, dst, stream string) error {
-	log, err := os.OpenFile(dst, os.O_RDWR|os.O_APPEND|os.O_CREATE, 0600)
+func (daemon *Daemon) LogToDisk(src *multiwriter.MultiWriter, dst, id, stream string) error {
+	logger, err := daemon.loggingDriver.NewLogger(id, stream)
 	if err != nil {
 		return err
 	}
-	src.AddWriter(log, stream)
+
+	w := logmessage.NewLogWriter(id, stream, logger)
+
+	src.Add(w)
+
 	return nil
 }
 
@@ -856,6 +864,7 @@ func NewDaemonFromDirectory(config *Config, eng *engine.Engine) (*Daemon, error)
 		sysInitPath:    sysInitPath,
 		execDriver:     ed,
 		eng:            eng,
+		loggingDriver:  loggingdriver.NewDefaultDriver(daemonRepo),
 	}
 	if err := daemon.checkLocaldns(); err != nil {
 		return nil, err

@@ -23,8 +23,8 @@ import (
 	"github.com/docker/docker/image"
 	"github.com/docker/docker/links"
 	"github.com/docker/docker/nat"
-	"github.com/docker/docker/pkg/broadcastwriter"
 	"github.com/docker/docker/pkg/log"
+	"github.com/docker/docker/pkg/multiwriter"
 	"github.com/docker/docker/pkg/networkfs/etchosts"
 	"github.com/docker/docker/pkg/networkfs/resolvconf"
 	"github.com/docker/docker/pkg/symlink"
@@ -66,8 +66,8 @@ type Container struct {
 	ExecDriver     string
 
 	command   *execdriver.Command
-	stdout    *broadcastwriter.BroadcastWriter
-	stderr    *broadcastwriter.BroadcastWriter
+	stdout    *multiwriter.MultiWriter
+	stderr    *multiwriter.MultiWriter
 	stdin     io.ReadCloser
 	stdinPipe io.WriteCloser
 
@@ -356,25 +356,25 @@ func (container *Container) StdinPipe() (io.WriteCloser, error) {
 
 func (container *Container) StdoutPipe() (io.ReadCloser, error) {
 	reader, writer := io.Pipe()
-	container.stdout.AddWriter(writer, "")
+	container.stdout.Add(writer)
 	return utils.NewBufReader(reader), nil
 }
 
 func (container *Container) StderrPipe() (io.ReadCloser, error) {
 	reader, writer := io.Pipe()
-	container.stderr.AddWriter(writer, "")
+	container.stderr.Add(writer)
 	return utils.NewBufReader(reader), nil
 }
 
 func (container *Container) StdoutLogPipe() io.ReadCloser {
 	reader, writer := io.Pipe()
-	container.stdout.AddWriter(writer, "stdout")
+	container.stdout.Add(writer)
 	return utils.NewBufReader(reader)
 }
 
 func (container *Container) StderrLogPipe() io.ReadCloser {
 	reader, writer := io.Pipe()
-	container.stderr.AddWriter(writer, "stderr")
+	container.stderr.Add(writer)
 	return utils.NewBufReader(reader)
 }
 
@@ -1083,11 +1083,11 @@ func (container *Container) startLoggingToDisk() error {
 		return err
 	}
 
-	if err := container.daemon.LogToDisk(container.stdout, pth, "stdout"); err != nil {
+	if err := container.daemon.LogToDisk(container.stdout, pth, container.ID, "stdout"); err != nil {
 		return err
 	}
 
-	if err := container.daemon.LogToDisk(container.stderr, pth, "stderr"); err != nil {
+	if err := container.daemon.LogToDisk(container.stderr, pth, container.ID, "stderr"); err != nil {
 		return err
 	}
 
