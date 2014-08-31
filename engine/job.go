@@ -8,6 +8,7 @@ import (
 	"time"
 
 	log "github.com/Sirupsen/logrus"
+	"github.com/getsentry/raven-go"
 )
 
 // A job is the fundamental unit of work in the docker engine.
@@ -224,11 +225,16 @@ func (job *Job) Errorf(format string, args ...interface{}) Status {
 	if format[len(format)-1] != '\n' {
 		format = format + "\n"
 	}
+
+	err := fmt.Errorf(format, args...)
+	job.error(err)
 	fmt.Fprintf(job.Stderr, format, args...)
 	return StatusErr
 }
 
 func (job *Job) Error(err error) Status {
+	job.error(err)
+
 	fmt.Fprintf(job.Stderr, "%s\n", err)
 	return StatusErr
 }
@@ -239,4 +245,10 @@ func (job *Job) StatusCode() int {
 
 func (job *Job) SetCloseIO(val bool) {
 	job.closeIO = val
+}
+
+func (j *Job) error(err error) {
+	if j.Eng.Sentry != nil {
+		j.Eng.Sentry.CaptureError(err, nil, raven.NewStacktrace(2, 0, nil))
+	}
 }

@@ -87,6 +87,7 @@ func (e *Events) Log(job *engine.Job) engine.Status {
 	}
 	// not waiting for receivers
 	go e.log(job.Args[0], job.Args[1], job.Args[2])
+
 	return engine.StatusOK
 }
 

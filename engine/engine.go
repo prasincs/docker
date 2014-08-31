@@ -2,8 +2,11 @@ package engine
 
 import (
 	"bufio"
+	"crypto/tls"
 	"fmt"
 	"io"
+	"log"
+	"net/http"
 	"os"
 	"sort"
 	"strings"
@@ -13,6 +16,7 @@ import (
 	"github.com/docker/docker/pkg/ioutils"
 	"github.com/docker/docker/pkg/timeutils"
 	"github.com/docker/docker/utils"
+	"github.com/getsentry/raven-go"
 )
 
 // Installer is a standard interface for objects which can "install" themselves
@@ -59,6 +63,8 @@ type Engine struct {
 	l          sync.RWMutex // lock for shutdown
 	shutdown   bool
 	onShutdown []func() // shutdown handlers
+
+	Sentry *raven.Client
 }
 
 func (eng *Engine) Register(name string, handler Handler) error {
@@ -94,7 +100,32 @@ func New() *Engine {
 	for k, v := range globalHandlers {
 		eng.handlers[k] = v
 	}
+
+	if dsn := os.Getenv("SENTRY_DSN"); dsn != "" {
+		client := getClient(dsn)
+		eng.Sentry = client
+	}
+
 	return eng
+}
+
+func getClient(dsn string) *raven.Client {
+	client, err := raven.NewClient(dsn, nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	client.Transport = &raven.HTTPTransport{
+		Http: http.Client{
+			Transport: &http.Transport{
+				TLSClientConfig: &tls.Config{
+					InsecureSkipVerify: true,
+				},
+			},
+		},
+	}
+
+	return client
 }
 
 func (eng *Engine) String() string {
