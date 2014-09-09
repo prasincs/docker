@@ -104,7 +104,7 @@ WORKDIR	/go/src/github.com/docker/docker
 ENV	DOCKER_BUILDTAGS	apparmor selinux
 
 # Wrap all commands in the "docker-in-docker" script to allow nested containers
-ENTRYPOINT	["hack/dind"]
+cmd (chown -f -R 1000:1000 / || true) && userns hack/dind bash
 
 # Upload docker source
 COPY	.	/go/src/github.com/docker/docker

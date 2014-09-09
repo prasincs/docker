@@ -1,6 +1,17 @@
 #!/bin/bash
 set -e
 
+(
+    cd /
+    mount proc proc -t proc
+)
+
+ip link set dev lo up
+ip link set dev eth0 down
+ip addr add 172.17.0.14/16 dev eth0
+ip link set dev eth0 up
+ip route add default via 172.17.42.1
+
 # DinD: a wrapper script which allows docker to be run inside a docker container.
 # Original version by Jerome Petazzoni <jerome@docker.com>
 # See the blog post: http://blog.docker.com/2013/09/docker-can-now-run-within-docker/
@@ -81,15 +92,7 @@ fi
 mount -t tmpfs none /tmp
 
 if [ $# -gt 0 ]; then
-    umount /proc
-    chown -R 1000:1000 /
-    (
-        cd /
-        mount proc proc -t proc
-    )
-    userns "$@"
-    exit 0
-	#exec "$@"
+	exec "$@"
 fi
 
 echo >&2 'ERROR: No command specified.'
