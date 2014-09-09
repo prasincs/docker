@@ -108,3 +108,4 @@ ENTRYPOINT	["hack/dind"]
 
 # Upload docker source
 COPY	.	/go/src/github.com/docker/docker
+RUN mv /go/src/github.com/docker/docker/hack/userns /bin/

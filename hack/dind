@@ -81,7 +81,15 @@ fi
 mount -t tmpfs none /tmp
 
 if [ $# -gt 0 ]; then
-	exec "$@"
+    umount /proc
+    chown -R 1000:1000 /
+    (
+        cd /
+        mount proc proc -t proc
+    )
+    userns "$@"
+    exit 0
+	#exec "$@"
 fi
 
 echo >&2 'ERROR: No command specified.'
