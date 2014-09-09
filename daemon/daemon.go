@@ -122,6 +122,7 @@ func (daemon *Daemon) Install(eng *engine.Engine) error {
 		"unpause":           daemon.ContainerUnpause,
 		"wait":              daemon.ContainerWait,
 		"image_delete":      daemon.ImageDelete, // FIXME: see above
+		"groups_create":     daemon.CreateGroup,
 	} {
 		if err := eng.Register(name, method); err != nil {
 			return err
@@ -1099,6 +1100,13 @@ func (daemon *Daemon) ImageGetCached(imgID string, config *runconfig.Config) (*i
 		}
 	}
 	return match, nil
+}
+
+func (daemon *Daemon) CreateGroup(job *engine.Job) engine.Status {
+	name := job.Args[0]
+	log.Infof("it works-------------------------- %s ------------", name)
+
+	return engine.StatusOK
 }
 
 func checkKernelAndArch() error {

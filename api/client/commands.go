@@ -72,6 +72,7 @@ func (cli *DockerCli) CmdHelp(args ...string) error {
 		{"login", "Register or log in to a Docker registry server"},
 		{"logout", "Log out from a Docker registry server"},
 		{"logs", "Fetch the logs of a container"},
+		{"mkgroup", "Create a new group"},
 		{"port", "Lookup the public-facing port that is NAT-ed to PRIVATE_PORT"},
 		{"pause", "Pause all processes within a container"},
 		{"ps", "List containers"},
@@ -2334,5 +2335,27 @@ func (cli *DockerCli) CmdLoad(args ...string) error {
 	if err := cli.stream("POST", "/images/load", input, cli.out, nil); err != nil {
 		return err
 	}
+	return nil
+}
+
+func (cli *DockerCli) CmdMkgroup(args ...string) error {
+	cmd := cli.Subcmd("mkgroup", "NAME", "Create a new group")
+
+	if err := cmd.Parse(args); err != nil {
+		return err
+	}
+
+	if cmd.NArg() != 1 {
+		cmd.Usage()
+		return nil
+	}
+
+	params := url.Values{}
+	params.Set("name", cmd.Arg(0))
+
+	if _, _, err := cli.call("POST", "/groups/create?"+params.Encode(), nil, false); err != nil {
+		return err
+	}
+
 	return nil
 }

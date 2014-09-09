@@ -1025,6 +1025,24 @@ func postContainersCopy(eng *engine.Engine, version version.Version, w http.Resp
 	return nil
 }
 
+func postGroupsCreate(eng *engine.Engine, version version.Version, w http.ResponseWriter, r *http.Request, vars map[string]string) error {
+	if vars == nil {
+		return fmt.Errorf("Missing parameter")
+	}
+
+	name := r.FormValue("name")
+
+	job := eng.Job("groups_create", name)
+	job.Stdout.Add(w)
+
+	if err := job.Run(); err != nil {
+		log.Errorf("%s", err)
+		return err
+	}
+
+	return nil
+}
+
 func optionsHandler(eng *engine.Engine, version version.Version, w http.ResponseWriter, r *http.Request, vars map[string]string) error {
 	w.WriteHeader(http.StatusOK)
 	return nil
@@ -1147,6 +1165,7 @@ func createRouter(eng *engine.Engine, logging, enableCors bool, dockerVersion st
 			"/containers/{name:.*}/resize":  postContainersResize,
 			"/containers/{name:.*}/attach":  postContainersAttach,
 			"/containers/{name:.*}/copy":    postContainersCopy,
+			"/groups/create":                postGroupsCreate,
 		},
 		"DELETE": {
 			"/containers/{name:.*}": deleteContainers,
