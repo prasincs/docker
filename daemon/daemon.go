@@ -15,6 +15,7 @@ import (
 	"github.com/docker/libcontainer/label"
 
 	"github.com/docker/docker/archive"
+	"github.com/docker/docker/daemon/coredata"
 	"github.com/docker/docker/daemon/execdriver"
 	"github.com/docker/docker/daemon/execdriver/execdrivers"
 	"github.com/docker/docker/daemon/execdriver/lxc"
@@ -95,6 +96,7 @@ type Daemon struct {
 	containerGraph *graphdb.Database
 	driver         graphdriver.Driver
 	execDriver     execdriver.Driver
+	db             *coredata.Coredata
 }
 
 // Install installs daemon capabilities to eng.
@@ -844,6 +846,11 @@ func NewDaemonFromDirectory(config *Config, eng *engine.Engine) (*Daemon, error)
 		return nil, err
 	}
 
+	db, err := coredata.New(path.Join(config.Root, "coredata"))
+	if err != nil {
+		return nil, err
+	}
+
 	daemon := &Daemon{
 		repository:     daemonRepo,
 		containers:     &contStore{s: make(map[string]*Container)},
@@ -858,6 +865,7 @@ func NewDaemonFromDirectory(config *Config, eng *engine.Engine) (*Daemon, error)
 		sysInitPath:    sysInitPath,
 		execDriver:     ed,
 		eng:            eng,
+		db:             db,
 	}
 	if err := daemon.checkLocaldns(); err != nil {
 		return nil, err
@@ -1104,7 +1112,10 @@ func (daemon *Daemon) ImageGetCached(imgID string, config *runconfig.Config) (*i
 
 func (daemon *Daemon) CreateGroup(job *engine.Job) engine.Status {
 	name := job.Args[0]
-	log.Infof("it works-------------------------- %s ------------", name)
+
+	if err := daemon.db.CreateGroup(name); err != nil {
+		return job.Error(err)
+	}
 
 	return engine.StatusOK
 }
