@@ -717,6 +717,11 @@ func deleteImages(eng *engine.Engine, version version.Version, w http.ResponseWr
 	return job.Run()
 }
 
+func deleteGroups(eng *engine.Engine, version version.Version, w http.ResponseWriter, r *http.Request, vars map[string]string) error {
+	job := eng.Job("groups_delete", vars["name"])
+	return job.Run()
+}
+
 func postContainersStart(eng *engine.Engine, version version.Version, w http.ResponseWriter, r *http.Request, vars map[string]string) error {
 	if vars == nil {
 		return fmt.Errorf("Missing parameter")
@@ -1177,6 +1182,7 @@ func createRouter(eng *engine.Engine, logging, enableCors bool, dockerVersion st
 		"DELETE": {
 			"/containers/{name:.*}": deleteContainers,
 			"/images/{name:.*}":     deleteImages,
+			"/groups/{name:.*}":     deleteGroups,
 		},
 		"OPTIONS": {
 			"": optionsHandler,

@@ -2353,6 +2353,12 @@ func (cli *DockerCli) CmdGroups(args ...string) error {
 		if _, _, err := cli.call("POST", "/groups/create?"+params.Encode(), nil, false); err != nil {
 			return err
 		}
+	case "rm":
+		if _, _, err := cli.call("DELETE", "/groups/"+cmd.Arg(1), nil, false); err != nil {
+			return err
+		}
+
+		fmt.Fprintf(cli.out, "%s\n", cmd.Arg(1))
 	case "ls":
 		body, _, err := readBody(cli.call("GET", "/groups/json?", nil, false))
 		if err != nil {

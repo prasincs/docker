@@ -126,6 +126,7 @@ func (daemon *Daemon) Install(eng *engine.Engine) error {
 		"image_delete":      daemon.ImageDelete, // FIXME: see above
 		"groups_create":     daemon.CreateGroup,
 		"groups_list":       daemon.ListGroups,
+		"groups_delete":     daemon.DeleteGroup,
 	} {
 		if err := eng.Register(name, method); err != nil {
 			return err
@@ -1115,6 +1116,16 @@ func (daemon *Daemon) CreateGroup(job *engine.Job) engine.Status {
 	name := job.Args[0]
 
 	if err := daemon.db.CreateGroup(name); err != nil {
+		return job.Error(err)
+	}
+
+	return engine.StatusOK
+}
+
+func (daemon *Daemon) DeleteGroup(job *engine.Job) engine.Status {
+	name := job.Args[0]
+
+	if err := daemon.db.RemoveGroup(name); err != nil {
 		return job.Error(err)
 	}
 
