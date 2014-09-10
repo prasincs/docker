@@ -72,7 +72,7 @@ func (cli *DockerCli) CmdHelp(args ...string) error {
 		{"login", "Register or log in to a Docker registry server"},
 		{"logout", "Log out from a Docker registry server"},
 		{"logs", "Fetch the logs of a container"},
-		{"mkgroup", "Create a new group"},
+		{"groups", "Manage groups"},
 		{"port", "Lookup the public-facing port that is NAT-ed to PRIVATE_PORT"},
 		{"pause", "Pause all processes within a container"},
 		{"ps", "List containers"},
@@ -2338,23 +2338,46 @@ func (cli *DockerCli) CmdLoad(args ...string) error {
 	return nil
 }
 
-func (cli *DockerCli) CmdMkgroup(args ...string) error {
-	cmd := cli.Subcmd("mkgroup", "NAME", "Create a new group")
+func (cli *DockerCli) CmdGroups(args ...string) error {
+	cmd := cli.Subcmd("groups", "", "Mange groups")
 
 	if err := cmd.Parse(args); err != nil {
 		return err
 	}
 
-	if cmd.NArg() != 1 {
-		cmd.Usage()
-		return nil
-	}
+	switch cmd.Arg(0) {
+	case "create":
+		params := url.Values{}
+		params.Set("name", cmd.Arg(1))
 
-	params := url.Values{}
-	params.Set("name", cmd.Arg(0))
+		if _, _, err := cli.call("POST", "/groups/create?"+params.Encode(), nil, false); err != nil {
+			return err
+		}
+	case "ls":
+		body, _, err := readBody(cli.call("GET", "/groups/json?", nil, false))
+		if err != nil {
+			return err
+		}
 
-	if _, _, err := cli.call("POST", "/groups/create?"+params.Encode(), nil, false); err != nil {
-		return err
+		data := []struct {
+			Name           string
+			ContainerCount int
+		}{}
+
+		if err := json.Unmarshal(body, &data); err != nil {
+			return err
+		}
+
+		w := tabwriter.NewWriter(cli.out, 20, 1, 3, ' ', 0)
+		fmt.Fprintln(w, "NAME\tCOUNT")
+
+		for _, d := range data {
+			fmt.Fprintf(w, "%s\t%d\n", d.Name, d.ContainerCount)
+		}
+
+		if err := w.Flush(); err != nil {
+			return err
+		}
 	}
 
 	return nil

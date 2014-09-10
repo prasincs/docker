@@ -56,6 +56,10 @@ func (d *Coredata) ls(args ...string) ([]string, error) {
 
 	fi, err := ioutil.ReadDir(d.join(args...))
 	if err != nil {
+		if os.IsNotExist(err) {
+			return out, nil
+		}
+
 		return nil, err
 	}
 

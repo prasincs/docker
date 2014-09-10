@@ -125,6 +125,7 @@ func (daemon *Daemon) Install(eng *engine.Engine) error {
 		"wait":              daemon.ContainerWait,
 		"image_delete":      daemon.ImageDelete, // FIXME: see above
 		"groups_create":     daemon.CreateGroup,
+		"groups_list":       daemon.ListGroups,
 	} {
 		if err := eng.Register(name, method); err != nil {
 			return err
@@ -1114,6 +1115,34 @@ func (daemon *Daemon) CreateGroup(job *engine.Job) engine.Status {
 	name := job.Args[0]
 
 	if err := daemon.db.CreateGroup(name); err != nil {
+		return job.Error(err)
+	}
+
+	return engine.StatusOK
+}
+
+func (daemon *Daemon) ListGroups(job *engine.Job) engine.Status {
+	groups, err := daemon.db.ListGroups()
+	if err != nil {
+		return job.Error(err)
+	}
+
+	outs := engine.NewTable("Name", 0)
+
+	for _, g := range groups {
+		containers, err := daemon.db.ListContainersInGroup(g)
+		if err != nil {
+			return job.Error(err)
+		}
+
+		out := &engine.Env{}
+		out.Set("Name", g)
+		out.SetInt("ContainerCount", len(containers))
+
+		outs.Add(out)
+	}
+
+	if _, err := outs.WriteListTo(job.Stdout); err != nil {
 		return job.Error(err)
 	}
 

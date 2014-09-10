@@ -1043,6 +1043,12 @@ func postGroupsCreate(eng *engine.Engine, version version.Version, w http.Respon
 	return nil
 }
 
+func getGroupsJSON(eng *engine.Engine, version version.Version, w http.ResponseWriter, r *http.Request, vars map[string]string) error {
+	job := eng.Job("groups_list")
+	streamJSON(job, w, false)
+	return job.Run()
+}
+
 func optionsHandler(eng *engine.Engine, version version.Version, w http.ResponseWriter, r *http.Request, vars map[string]string) error {
 	w.WriteHeader(http.StatusOK)
 	return nil
@@ -1145,6 +1151,7 @@ func createRouter(eng *engine.Engine, logging, enableCors bool, dockerVersion st
 			"/containers/{name:.*}/top":       getContainersTop,
 			"/containers/{name:.*}/logs":      getContainersLogs,
 			"/containers/{name:.*}/attach/ws": wsContainersAttach,
+			"/groups/json":                    getGroupsJSON,
 		},
 		"POST": {
 			"/auth":                         postAuth,
