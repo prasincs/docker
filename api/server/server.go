@@ -641,7 +641,7 @@ func postContainersCreate(eng *engine.Engine, version version.Version, w http.Re
 	}
 	var (
 		out          engine.Env
-		job          = eng.Job("create", r.Form.Get("name"))
+		job          = eng.Job("create", r.Form.Get("name"), r.Form.Get("group"))
 		outWarnings  []string
 		stdoutBuffer = bytes.NewBuffer(nil)
 		warnings     = bytes.NewBuffer(nil)

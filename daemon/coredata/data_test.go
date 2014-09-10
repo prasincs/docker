@@ -28,8 +28,24 @@ func TestCreateGroup(t *testing.T) {
 
 	name := "test-group"
 
+	exists, err := d.GroupExists(name)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if exists {
+		t.Fatalf("expected group %#v to not exist, but it does", name)
+	}
+
 	if err := d.CreateGroup(name); err != nil {
 		t.Fatal(err)
+	}
+
+	exists, err = d.GroupExists(name)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !exists {
+		t.Fatalf("expected group %#v to exist, but it doesn't", name)
 	}
 
 	groups, err := d.ListGroups()

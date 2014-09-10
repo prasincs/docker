@@ -35,6 +35,18 @@ func (d *Coredata) RemoveGroup(name string) error {
 	return os.RemoveAll(d.join("/groups", name))
 }
 
+func (d *Coredata) GroupExists(name string) (bool, error) {
+	_, err := os.Stat(d.join("/groups", name))
+
+	if err == nil {
+		return true, nil
+	} else if os.IsNotExist(err) {
+		return false, nil
+	} else {
+		return false, err
+	}
+}
+
 func (d *Coredata) ListGroups() ([]string, error) {
 	return d.ls("/groups")
 }

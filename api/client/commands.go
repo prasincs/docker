@@ -2017,6 +2017,7 @@ func (cli *DockerCli) CmdRun(args ...string) error {
 	// Retrieve relevant client-side config
 	var (
 		flName        = cmd.Lookup("name")
+		flGroup       = cmd.Lookup("group")
 		flRm          = cmd.Lookup("rm")
 		flSigProxy    = cmd.Lookup("sig-proxy")
 		autoRemove, _ = strconv.ParseBool(flRm.Value.String())
@@ -2056,6 +2057,9 @@ func (cli *DockerCli) CmdRun(args ...string) error {
 	containerValues := url.Values{}
 	if name := flName.Value.String(); name != "" {
 		containerValues.Set("name", name)
+	}
+	if group := flGroup.Value.String(); group != "" {
+		containerValues.Set("group", group)
 	}
 
 	//create the container

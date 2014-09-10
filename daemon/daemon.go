@@ -516,7 +516,17 @@ func (daemon *Daemon) getEntrypointAndArgs(config *runconfig.Config) (string, []
 	return entrypoint, args
 }
 
-func (daemon *Daemon) newContainer(name string, config *runconfig.Config, img *image.Image) (*Container, error) {
+func (daemon *Daemon) newContainer(name string, group string, config *runconfig.Config, img *image.Image) (*Container, error) {
+	if group != "" {
+		groupExists, err := daemon.db.GroupExists(group)
+		if err != nil {
+			return nil, err
+		}
+		if !groupExists {
+			return nil, fmt.Errorf("invalid group %#v", group)
+		}
+	}
+
 	var (
 		id  string
 		err error
@@ -549,6 +559,13 @@ func (daemon *Daemon) newContainer(name string, config *runconfig.Config, img *i
 	if container.ProcessLabel, container.MountLabel, err = label.GenLabels(""); err != nil {
 		return nil, err
 	}
+
+	if group != "" {
+		if err := daemon.db.AddContainerToGroup(group, container.ID); err != nil {
+			return nil, err
+		}
+	}
+
 	return container, nil
 }
 

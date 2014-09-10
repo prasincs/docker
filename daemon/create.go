@@ -8,11 +8,15 @@ import (
 )
 
 func (daemon *Daemon) ContainerCreate(job *engine.Job) engine.Status {
-	var name string
-	if len(job.Args) == 1 {
+	var name, group string
+	if len(job.Args) >= 1 {
 		name = job.Args[0]
-	} else if len(job.Args) > 1 {
-		return job.Errorf("Usage: %s", job.Name)
+	}
+	if len(job.Args) >= 2 {
+		group = job.Args[1]
+	}
+	if len(job.Args) > 2 {
+		return job.Errorf("Usage: %s [NAME] [GROUP]", job.Name)
 	}
 	config := runconfig.ContainerConfigFromJob(job)
 	if config.Memory != 0 && config.Memory < 524288 {
@@ -26,7 +30,7 @@ func (daemon *Daemon) ContainerCreate(job *engine.Job) engine.Status {
 		job.Errorf("Your kernel does not support swap limit capabilities. Limitation discarded.\n")
 		config.MemorySwap = -1
 	}
-	container, buildWarnings, err := daemon.Create(config, name)
+	container, buildWarnings, err := daemon.Create(config, name, group)
 	if err != nil {
 		if daemon.Graph().IsNotExist(err) {
 			_, tag := parsers.ParseRepositoryTag(config.Image)
@@ -53,8 +57,8 @@ func (daemon *Daemon) ContainerCreate(job *engine.Job) engine.Status {
 	return engine.StatusOK
 }
 
-// Create creates a new container from the given configuration with a given name.
-func (daemon *Daemon) Create(config *runconfig.Config, name string) (*Container, []string, error) {
+// Create creates a new container from the given configuration with a given name and group.
+func (daemon *Daemon) Create(config *runconfig.Config, name string, group string) (*Container, []string, error) {
 	var (
 		container *Container
 		warnings  []string
@@ -70,7 +74,7 @@ func (daemon *Daemon) Create(config *runconfig.Config, name string) (*Container,
 	if warnings, err = daemon.mergeAndVerifyConfig(config, img); err != nil {
 		return nil, nil, err
 	}
-	if container, err = daemon.newContainer(name, config, img); err != nil {
+	if container, err = daemon.newContainer(name, group, config, img); err != nil {
 		return nil, nil, err
 	}
 	if err := daemon.createRootfs(container, img); err != nil {
