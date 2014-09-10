@@ -2384,6 +2384,8 @@ func (cli *DockerCli) CmdGroups(args ...string) error {
 		if err := w.Flush(); err != nil {
 			return err
 		}
+	default:
+		fmt.Fprintf(cli.err, "Usage: docker groups [ls|create|rm]\n")
 	}
 
 	return nil
