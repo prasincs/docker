@@ -57,6 +57,8 @@ type Container struct {
 
 	ID string
 
+	Group string
+
 	Created time.Time
 
 	Path string
