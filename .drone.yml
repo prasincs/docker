@@ -1,0 +1,8 @@
+image: go1.2
+script:
+  - hack/make.sh validate-dco
+  - hack/make.sh validate-gofmt
+notify:
+  email:
+    recipients:
+      - al@docker.com
