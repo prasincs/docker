@@ -1,4 +1,4 @@
-image: docker
+image: ubuntu
 script:
   - curl https://get.docker.io/ubuntu/ | sh
   - hack/make.sh validate-gofmt
