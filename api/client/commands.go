@@ -72,6 +72,14 @@ func (cli *DockerCli) CmdHelp(args ...string) error {
 	return nil
 }
 
+type buildOptions struct {
+	tag            string
+	suppressOutput bool
+	noCache        bool
+	rm             bool
+	forceRm        bool
+}
+
 func (cli *DockerCli) CmdBuild(args ...string) error {
 	cmd := cli.Subcmd("build", "PATH | URL | -", "Build a new image from the source code at PATH")
 	tag := cmd.String([]string{"t", "-tag"}, "", "Repository name (and optionally a tag) to be applied to the resulting image in case of success")
@@ -86,7 +94,12 @@ func (cli *DockerCli) CmdBuild(args ...string) error {
 		cmd.Usage()
 		return nil
 	}
+	source := cmd.Arg(0)
 
+	return cli.build(source, buildOptions{*tag, *suppressOutput, *noCache, *rm, *forceRm})
+}
+
+func (cli *DockerCli) build(source string, options buildOptions) error {
 	var (
 		context  archive.Archive
 		isRemote bool
@@ -95,7 +108,7 @@ func (cli *DockerCli) CmdBuild(args ...string) error {
 
 	_, err = exec.LookPath("git")
 	hasGit := err == nil
-	if cmd.Arg(0) == "-" {
+	if source == "-" {
 		// As a special case, 'docker build -' will build from either an empty context with the
 		// contents of stdin as a Dockerfile, or a tar-ed context from stdin.
 		buf := bufio.NewReader(cli.in)
@@ -112,12 +125,12 @@ func (cli *DockerCli) CmdBuild(args ...string) error {
 		} else {
 			context = ioutil.NopCloser(buf)
 		}
-	} else if utils.IsURL(cmd.Arg(0)) && (!utils.IsGIT(cmd.Arg(0)) || !hasGit) {
+	} else if utils.IsURL(source) && (!utils.IsGIT(source) || !hasGit) {
 		isRemote = true
 	} else {
-		root := cmd.Arg(0)
+		root := source
 		if utils.IsGIT(root) {
-			remoteURL := cmd.Arg(0)
+			remoteURL := source
 			if !strings.HasPrefix(remoteURL, "git://") && !strings.HasPrefix(remoteURL, "git@") && !utils.IsURL(remoteURL) {
 				remoteURL = "https://" + remoteURL
 			}
@@ -137,7 +150,7 @@ func (cli *DockerCli) CmdBuild(args ...string) error {
 		}
 		filename := path.Join(root, "Dockerfile")
 		if _, err = os.Stat(filename); os.IsNotExist(err) {
-			return fmt.Errorf("no Dockerfile found in %s", cmd.Arg(0))
+			return fmt.Errorf("no Dockerfile found in %s", source)
 		}
 		var excludes []string
 		ignore, err := ioutil.ReadFile(path.Join(root, ".dockerignore"))
@@ -177,8 +190,8 @@ func (cli *DockerCli) CmdBuild(args ...string) error {
 	v := &url.Values{}
 
 	//Check if the given image name can be resolved
-	if *tag != "" {
-		repository, tag := parsers.ParseRepositoryTag(*tag)
+	if options.tag != "" {
+		repository, tag := parsers.ParseRepositoryTag(options.tag)
 		if _, _, err := registry.ResolveRepositoryName(repository); err != nil {
 			return err
 		}
@@ -189,24 +202,24 @@ func (cli *DockerCli) CmdBuild(args ...string) error {
 		}
 	}
 
-	v.Set("t", *tag)
+	v.Set("t", options.tag)
 
-	if *suppressOutput {
+	if options.suppressOutput {
 		v.Set("q", "1")
 	}
 	if isRemote {
-		v.Set("remote", cmd.Arg(0))
+		v.Set("remote", source)
 	}
-	if *noCache {
+	if options.noCache {
 		v.Set("nocache", "1")
 	}
-	if *rm {
+	if options.rm {
 		v.Set("rm", "1")
 	} else {
 		v.Set("rm", "0")
 	}
 
-	if *forceRm {
+	if options.forceRm {
 		v.Set("forcerm", "1")
 	}
 
@@ -2172,17 +2185,17 @@ func (cli *DockerCli) parseGroupConfig(cmd *flag.FlagSet) error {
 		return err
 	}
 
-	var groupInput *runconfig.GroupConfigInput
-	if err := yaml.Unmarshal(data, &groupInput); err != nil {
+	var raw *GroupConfig
+	if err := yaml.Unmarshal(data, &raw); err != nil {
 		return err
 	}
 
-	group, err := groupInput.AsGroupConfig()
+	processed, err := cli.processGroupConfig(raw)
 	if err != nil {
 		return err
 	}
 
-	if _, _, err := cli.call("POST", "/groups/run", group, true); err != nil {
+	if _, _, err := cli.call("POST", "/groups/run", processed, true); err != nil {
 		return err
 	}
 
