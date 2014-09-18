@@ -1,4 +1,4 @@
-image: go1.2
+image: docker
 script:
   - hack/make.sh validate-gofmt
   - make test
