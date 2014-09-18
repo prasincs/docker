@@ -1,7 +1,7 @@
 image: go1.2
 script:
-  - hack/make.sh validate-dco
   - hack/make.sh validate-gofmt
+  - make test
 notify:
   email:
     recipients:
