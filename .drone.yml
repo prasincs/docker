@@ -6,3 +6,4 @@ notify:
   email:
     recipients:
       - al@docker.com
+
