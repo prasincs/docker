@@ -1,6 +1,6 @@
 image: docker
 env:
-  - GOPATH=/var/cache/drone:/var/cache/drone/src/github.com/aluzzardi/docker/vendor
+  - GOPATH=/var/cache/drone:$DRONE_BUILD_DIR/vendor
 script:
 #  - hack/make.sh validate-dco
 #  - hack/make.sh validate-gofmt
