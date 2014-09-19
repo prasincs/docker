@@ -1,6 +1,6 @@
 image: docker
 script:
-  - hack/make.sh validate-dco
+#  - hack/make.sh validate-dco
   - hack/make.sh validate-gofmt
   - hack/make.sh binary
 notify:
