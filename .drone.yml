@@ -4,6 +4,7 @@ env:
 script:
 #  - hack/make.sh validate-dco
 #  - hack/make.sh validate-gofmt
+  - env     
   - pwd
   - hack/make.sh binary
 notify:
