@@ -30,6 +30,9 @@ func main() {
 	flag.Parse()
 	// FIXME: validate daemon flags here
 
+	t := ""
+	t.Error()
+
 	if *flVersion {
 		showVersion()
 		return
