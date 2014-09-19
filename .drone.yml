@@ -6,9 +6,7 @@ script:
 #  - hack/make.sh validate-gofmt
   - mkdir -p /var/cache/drone/src/github.com/docker
   - ln -s $DRONE_BUILD_DIR /var/cache/drone/src/github.com/docker
-  - env     
-  - pwd
-  - hack/make.sh binary
+  - hack/make.sh binary cross test-unit test-integration test-integration-cli
 notify:
   email:
     recipients:
