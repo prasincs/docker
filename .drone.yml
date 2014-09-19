@@ -1,8 +1,6 @@
-image: go1.2
+image: docker
 script:
-  - curl https://get.docker.io/ubuntu/ | sh
   - hack/make.sh validate-gofmt
-  - make test
 notify:
   email:
     recipients:
