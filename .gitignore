@@ -1,6 +1,13 @@
-# Docker project generated files to ignore
-#  if you want to ignore files created by your editor/tools,
-#  please consider a global .gitignore https://help.github.com/articles/ignoring-files
+# WO WO WO, hold up.  don't you dare think about making a change to this file.  let 
+# me guess, you have a cool editor or tool that writes files to your current 
+# directory as you hack on an awesome feature for docker.  right?  
+# that's what i thought, however, do you know how long this file would be if we added
+# rules for every contributor's custom setup?  really fuckin long.  luckily git has this super 
+# cool feature that allows you to setup global ignore rules for your entire system.  yup
+# thats right, you no longer have to impose your rules on every project you want to 
+# contribute to.  
+#
+# ref: https://help.github.com/articles/ignoring-files
 .vagrant*
 bin
 docker/docker
