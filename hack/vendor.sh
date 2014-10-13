@@ -39,6 +39,12 @@ clone() {
 	echo done
 }
 
+clone git github.com/citadel/citadel 5651d9bad8
+
+clone git github.com/coreos/go-etcd 23142f6773 
+
+clone git github.com/samalba/dockerclient aaf6b71
+
 clone git github.com/kr/pty 67e2db24c8
 
 clone git github.com/gorilla/context 14f550f51a

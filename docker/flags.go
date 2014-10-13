@@ -23,6 +23,8 @@ func init() {
 var (
 	flVersion     = flag.Bool([]string{"v", "-version"}, false, "Print version information and quit")
 	flDaemon      = flag.Bool([]string{"d", "-daemon"}, false, "Enable daemon mode")
+	flMaster      = flag.Bool([]string{"-master"}, false, "Enable master for clustering")
+	flDiscovery   = flag.String([]string{"-discovery"}, "", "URL to the discovery service")
 	flDebug       = flag.Bool([]string{"D", "-debug"}, false, "Enable debug mode")
 	flSocketGroup = flag.String([]string{"G", "-group"}, "docker", "Group to assign the unix socket specified by -H when running in daemon mode\nuse '' (the empty string) to disable setting of a group")
 	flEnableCors  = flag.Bool([]string{"#api-enable-cors", "-api-enable-cors"}, false, "Enable CORS headers in the remote API")

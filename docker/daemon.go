@@ -4,7 +4,9 @@ package main
 
 import (
 	"log"
+	"strings"
 
+	"github.com/citadel/citadel/docker"
 	"github.com/docker/docker/builder"
 	"github.com/docker/docker/builtins"
 	"github.com/docker/docker/daemon"
@@ -27,6 +29,16 @@ func init() {
 }
 
 func mainDaemon() {
+
+	if *flMaster {
+		for _, host := range flHosts {
+			if !strings.HasPrefix(host, "unix") {
+				log.Fatal(docker.Master(*flDiscovery, host))
+			}
+		}
+		log.Fatal("Clustering only works over tcp")
+	}
+
 	if flag.NArg() != 0 {
 		flag.Usage()
 		return
