@@ -3,7 +3,10 @@
 package main
 
 import (
+	"fmt"
+	"io/ioutil"
 	"log"
+	"net/http"
 	"strings"
 
 	"github.com/citadel/citadel/docker"
@@ -30,13 +33,39 @@ func init() {
 
 func mainDaemon() {
 
-	if *flMaster {
+	// clustering
+	if *flDiscovery != "" {
+		var clusteringHost string
+		// find valid host
 		for _, host := range flHosts {
 			if !strings.HasPrefix(host, "unix") {
-				log.Fatal(docker.Master(*flDiscovery, host))
+				clusteringHost = host
 			}
 		}
-		log.Fatal("Clustering only works over tcp")
+		if clusteringHost == "" {
+			log.Fatal("Clustering only works over tcp")
+		}
+
+		if *flMaster {
+			log.Fatal(docker.Master(*flDiscovery, clusteringHost))
+		}
+
+		// FIXME: better way to find external IP
+		resp, err := http.Get("http://myexternalip.com/raw")
+		if err != nil {
+			log.Fatal(err)
+		}
+		data, err := ioutil.ReadAll(resp.Body)
+		resp.Body.Close()
+		if err != nil {
+			log.Fatal(err)
+		}
+		dataStr := strings.TrimSpace(string(data))
+		parts := strings.Split(clusteringHost, ":")
+
+		if err := docker.Slave(*flDiscovery, dataStr, fmt.Sprintf("http://%s:%s", dataStr, parts[len(parts)-1])); err != nil {
+			log.Fatal(err)
+		}
 	}
 
 	if flag.NArg() != 0 {
