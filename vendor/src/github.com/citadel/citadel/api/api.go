@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -192,6 +193,7 @@ func getContainersJSON(c *cluster.Cluster, w http.ResponseWriter, r *http.Reques
 		dockerContainers = append(dockerContainers, citadel.ToDockerContainer(cs))
 	}
 
+	sort.Sort(sort.Reverse(ContainerSorter(dockerContainers)))
 	json.NewEncoder(w).Encode(dockerContainers)
 }
 

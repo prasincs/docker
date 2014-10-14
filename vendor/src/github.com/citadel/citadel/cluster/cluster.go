@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"strings"
 	"sync"
-	"time"
 
 	"github.com/citadel/citadel"
 )
@@ -22,7 +21,7 @@ type Cluster struct {
 	resourceManager citadel.ResourceManager
 }
 
-func New(manager citadel.ResourceManager, update time.Duration, engines ...*citadel.Engine) (*Cluster, error) {
+func New(manager citadel.ResourceManager, engines ...*citadel.Engine) (*Cluster, error) {
 	c := &Cluster{
 		engines:         make(map[string]*citadel.Engine),
 		schedulers:      make(map[string]citadel.Scheduler),

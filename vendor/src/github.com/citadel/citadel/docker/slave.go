@@ -1,6 +1,7 @@
 package docker
 
 import (
+	"log"
 	"time"
 
 	"github.com/citadel/citadel/discovery"
@@ -15,7 +16,9 @@ func Slave(url, slaveID, addr string) error {
 	go func() {
 		for {
 			time.Sleep(25 * time.Second)
-			discovery.RegisterSlaveRaw(url, slaveID, addr)
+			if err := discovery.RegisterSlaveRaw(url, slaveID, addr); err != nil {
+				log.Printf("[error] %v\n", err)
+			}
 		}
 	}()
 	return nil

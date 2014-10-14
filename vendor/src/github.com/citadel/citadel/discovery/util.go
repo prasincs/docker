@@ -19,8 +19,10 @@ func FetchSlavesRaw(url string) ([]string, error) {
 	}
 
 	var addrs []string
-	if err := json.NewDecoder(resp.Body).Decode(&addrs); err != nil {
-		return nil, err
+	if resp.StatusCode == http.StatusOK {
+		if err := json.NewDecoder(resp.Body).Decode(&addrs); err != nil {
+			return nil, err
+		}
 	}
 
 	return addrs, nil
