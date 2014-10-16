@@ -47,7 +47,7 @@ func mainDaemon() {
 		}
 
 		if *flMaster {
-			log.Fatal(docker.Master(*flDiscovery, clusteringHost))
+			log.Fatal(docker.Master(*flDiscovery, strings.TrimPrefix(clusteringHost, "tcp://")))
 		}
 
 		// FIXME: better way to find external IP
