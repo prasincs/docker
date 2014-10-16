@@ -20,12 +20,11 @@ func Master(url, addr string) error {
 	}
 	defer c.Close()
 
-	scheduler := scheduler.NewMultiScheduler(&scheduler.HostScheduler{}, &scheduler.LabelScheduler{})
+	scheduler := scheduler.NewMultiScheduler(
+		&scheduler.HostScheduler{},
+		&scheduler.PortScheduler{},
+		&scheduler.LabelScheduler{})
 	if err := c.RegisterScheduler("service", scheduler); err != nil {
-		return err
-	}
-
-	if err := c.Events(api.EventsHandler); err != nil {
 		return err
 	}
 
@@ -42,11 +41,12 @@ func Master(url, addr string) error {
 				}
 
 				if !found {
-					engine := citadel.NewEngine(fmt.Sprintf("node-%x", md5.Sum([]byte(node))), node, 2048, 1)
+					engine := citadel.NewEngine(fmt.Sprintf("node-%x", md5.Sum([]byte(node))), node, 1, 2048)
 
 					if err := engine.Connect(nil); err == nil {
 						log.Println("Adding new node:", engine.ID)
 						c.AddEngine(engine)
+						engine.Events(api.EventsHandler)
 					}
 				}
 			}

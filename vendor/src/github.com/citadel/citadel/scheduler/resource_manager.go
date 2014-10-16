@@ -34,7 +34,7 @@ func (r *ResourceManager) PlaceContainer(c *citadel.Container, engines []*citade
 			total       = ((cpuScore + memoryScore) / 200.0) * 100.0
 		)
 
-		if total <= 100.0 {
+		if cpuScore <= 100.0 && memoryScore <= 100.0 {
 			scores = append(scores, &score{r: e, score: total})
 		}
 	}

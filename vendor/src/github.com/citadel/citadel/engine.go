@@ -173,8 +173,11 @@ func (e *Engine) Create(c *Container, pullImage bool) error {
 		}
 		config.HostConfig.PortBindings[key] = append(config.HostConfig.PortBindings[key], dockerclient.PortBinding{
 			HostIp:   b.HostIp,
-			HostPort: fmt.Sprintf("%s", b.Port),
+			HostPort: fmt.Sprint(b.Port),
 		})
+	}
+	for _, b := range i.ExposedPorts {
+		config.ExposedPorts[b] = struct{}{}
 	}
 
 	if pullImage {
@@ -214,31 +217,31 @@ func (e *Engine) Create(c *Container, pullImage bool) error {
 	return nil
 }
 
-func (e *Engine) Start(c *Container, i *Image) error {
+func (e *Engine) Start(c *Container) error {
 	links := []string{}
-	for k, v := range i.Links {
+	for k, v := range c.Image.Links {
 		links = append(links, fmt.Sprintf("%s:%s", k, v))
 	}
 
 	binds := []string{}
-	for _, v := range i.Volumes {
+	for _, v := range c.Image.Volumes {
 		if strings.Index(v, ":") > -1 {
 			binds = append(binds, v)
 		}
 	}
 	hostConfig := &dockerclient.HostConfig{
-		PublishAllPorts: i.Publish,
+		PublishAllPorts: c.Image.Publish,
 		PortBindings:    make(map[string][]dockerclient.PortBinding),
 		Links:           links,
 		Binds:           binds,
 		RestartPolicy: dockerclient.RestartPolicy{
-			Name:              i.RestartPolicy.Name,
-			MaximumRetryCount: i.RestartPolicy.MaximumRetryCount,
+			Name:              c.Image.RestartPolicy.Name,
+			MaximumRetryCount: c.Image.RestartPolicy.MaximumRetryCount,
 		},
-		NetworkMode: i.NetworkMode,
+		NetworkMode: c.Image.NetworkMode,
 	}
 
-	for _, b := range i.BindPorts {
+	for _, b := range c.Image.BindPorts {
 		key := fmt.Sprintf("%d/%s", b.ContainerPort, b.Proto)
 
 		hostConfig.PortBindings[key] = []dockerclient.PortBinding{

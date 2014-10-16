@@ -35,7 +35,8 @@ type Image struct {
 	Labels map[string]string `json:"labels,omitempty"`
 
 	// BindPorts ensures that the container has exclusive access to the specified ports
-	BindPorts []*Port `json:"bind_ports,omitempty"`
+	BindPorts    []*Port  `json:"bind_ports,omitempty"`
+	ExposedPorts []string `json:"exposed_ports,omitempty"`
 
 	// UserData is user defined data that is passed to the container
 	UserData map[string][]string `json:"user_data,omitempty"`

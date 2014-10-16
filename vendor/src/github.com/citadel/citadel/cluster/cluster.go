@@ -209,7 +209,7 @@ func (c *Cluster) Create(image *citadel.Image, pull bool) (*citadel.Container, e
 	}
 	return container, nil
 }
-func (c *Cluster) Start(container *citadel.Container, image *citadel.Image) error {
+func (c *Cluster) Start(container *citadel.Container) error {
 	c.mux.Lock()
 	defer c.mux.Unlock()
 
@@ -218,7 +218,7 @@ func (c *Cluster) Start(container *citadel.Container, image *citadel.Image) erro
 		return fmt.Errorf("engine with id %s is not in cluster", container.Engine.ID)
 	}
 
-	return engine.Start(container, image)
+	return engine.Start(container)
 }
 
 // Engines returns the engines registered in the cluster
