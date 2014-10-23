@@ -39,7 +39,7 @@ clone() {
 	echo done
 }
 
-clone git github.com/citadel/citadel b7cf3ac8d1
+clone git github.com/citadel/citadel dc9b86cba6
 
 clone git github.com/coreos/go-etcd 23142f6773 
 

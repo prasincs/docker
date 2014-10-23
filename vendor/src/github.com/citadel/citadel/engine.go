@@ -149,6 +149,19 @@ func (e *Engine) Create(c *Container, pullImage bool) error {
 		}
 		vols[v] = struct{}{}
 	}
+
+	binds := []string{}
+	for _, v := range c.Image.Volumes {
+		if strings.Index(v, ":") > -1 {
+			binds = append(binds, v)
+		}
+	}
+
+	links := []string{}
+	for k, v := range c.Image.Links {
+		links = append(links, fmt.Sprintf("%s:%s", k, v))
+	}
+
 	config := &dockerclient.ContainerConfig{
 		Hostname:     i.Hostname,
 		Domainname:   i.Domainname,
@@ -162,6 +175,13 @@ func (e *Engine) Create(c *Container, pullImage bool) error {
 		HostConfig: dockerclient.HostConfig{
 			PortBindings:    make(map[string][]dockerclient.PortBinding),
 			PublishAllPorts: i.Publish,
+			Links:           links,
+			Binds:           binds,
+			RestartPolicy: dockerclient.RestartPolicy{
+				Name:              c.Image.RestartPolicy.Name,
+				MaximumRetryCount: c.Image.RestartPolicy.MaximumRetryCount,
+			},
+			NetworkMode: c.Image.NetworkMode,
 		},
 	}
 
@@ -218,41 +238,7 @@ func (e *Engine) Create(c *Container, pullImage bool) error {
 }
 
 func (e *Engine) Start(c *Container) error {
-	links := []string{}
-	for k, v := range c.Image.Links {
-		links = append(links, fmt.Sprintf("%s:%s", k, v))
-	}
-
-	binds := []string{}
-	for _, v := range c.Image.Volumes {
-		if strings.Index(v, ":") > -1 {
-			binds = append(binds, v)
-		}
-	}
-	hostConfig := &dockerclient.HostConfig{
-		PublishAllPorts: c.Image.Publish,
-		PortBindings:    make(map[string][]dockerclient.PortBinding),
-		Links:           links,
-		Binds:           binds,
-		RestartPolicy: dockerclient.RestartPolicy{
-			Name:              c.Image.RestartPolicy.Name,
-			MaximumRetryCount: c.Image.RestartPolicy.MaximumRetryCount,
-		},
-		NetworkMode: c.Image.NetworkMode,
-	}
-
-	for _, b := range c.Image.BindPorts {
-		key := fmt.Sprintf("%d/%s", b.ContainerPort, b.Proto)
-
-		hostConfig.PortBindings[key] = []dockerclient.PortBinding{
-			{
-				HostIp:   b.HostIp,
-				HostPort: fmt.Sprint(b.Port),
-			},
-		}
-	}
-
-	return e.client.StartContainer(c.ID, hostConfig)
+	return e.client.StartContainer(c.ID, nil)
 }
 
 func (e *Engine) ListImages() ([]string, error) {
