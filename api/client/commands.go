@@ -2764,6 +2764,7 @@ func (cli *DockerCli) CmdGroupsCreate(args ...string) error {
 func (cli *DockerCli) CmdUp(args ...string) error {
 	cmd := cli.Subcmd("up", "", "Create/update a group from a group.yml")
 	parse := cmd.Bool([]string{"#parse", "-parse"}, false, "Just parse group.yml and write JSON to stdout")
+	detach := cmd.Bool([]string{"d", "-detach"}, false, "Detached mode: run all containers in the background")
 
 	if err := cmd.Parse(args); err != nil {
 		return err
@@ -2794,6 +2795,10 @@ func (cli *DockerCli) CmdUp(args ...string) error {
 
 	if _, _, err := cli.call("POST", fmt.Sprintf("/groups/%s/start", group.Name), nil, true); err != nil {
 		return err
+	}
+
+	if !*detach {
+		return cli.attachToGroup(group)
 	}
 
 	return nil
