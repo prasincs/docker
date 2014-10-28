@@ -4,6 +4,8 @@ import (
 	"bufio"
 	"fmt"
 	"io"
+	"os"
+	"os/signal"
 
 	"github.com/docker/docker/api"
 )
@@ -25,6 +27,33 @@ func (cli *DockerCli) attachToGroup(group *api.Group) error {
 		open[c] = true
 		cli.attachToGroupContainer(group, c, events)
 	}
+
+	sigc := make(chan os.Signal)
+	signal.Notify(sigc, os.Interrupt, os.Kill)
+	defer signal.Stop(sigc)
+	go func() {
+		kill := false
+
+		for _ = range sigc {
+			message := "stopping"
+			command := "stop"
+
+			if kill {
+				message = "killing"
+				command = "kill"
+			}
+
+			for _, c := range group.Containers {
+				fmt.Fprintf(cli.out, "%s%s\n", prefix[c], color[c](message))
+				path := fmt.Sprintf("/containers/%s/%s/%s", group.Name, c.Name, command)
+				if _, _, err := readBody(cli.call("POST", path, nil, false)); err != nil {
+					fmt.Fprintf(cli.out, "%s%v\n", prefix[c], err)
+				}
+			}
+
+			kill = true // A second Ctrl-C means "kill it now"
+		}
+	}()
 
 	for e := range events {
 		if e.err != nil {
