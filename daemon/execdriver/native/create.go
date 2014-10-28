@@ -34,6 +34,7 @@ func (d *driver) createContainer(c *execdriver.Command) (*libcontainer.Config, e
 
 	// check to see if we are running in ramdisk to disable pivot root
 	container.MountConfig.NoPivotRoot = os.Getenv("DOCKER_RAMDISK") != ""
+	container.MountConfig.ReadonlyFs = c.ReadonlyRootfs
 	container.RestrictSys = true
 
 	if err := d.createNetwork(container, c); err != nil {

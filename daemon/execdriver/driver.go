@@ -118,4 +118,5 @@ type Command struct {
 	MountLabel         string            `json:"mount_label"`
 	LxcConfig          []string          `json:"lxc_config"`
 	AppArmorProfile    string            `json:"apparmor_profile"`
+	ReadonlyRootfs     bool              `json:"readonly_rootfs"`
 }
