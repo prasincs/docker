@@ -242,7 +242,7 @@ func (daemon *Daemon) updateGroupContainer(groupName string, c *api.Container) e
 		return err
 	}
 
-	container, _, err := daemon.CreateInGroup(config, c.Name, groupName)
+	container, _, err := daemon.CreateInGroup(config, nil, c.Name, groupName)
 	if err != nil {
 		// TODO: atomic abort and cleanup??????
 		return err
