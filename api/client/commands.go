@@ -94,9 +94,15 @@ func (cli *DockerCli) CmdBuild(args ...string) error {
 		cmd.Usage()
 		return nil
 	}
-	source := cmd.Arg(0)
-
-	return cli.build(source, buildOptions{*tag, *suppressOutput, *noCache, *rm, *forceRm})
+	options := buildOptions{*tag, *suppressOutput, *noCache, *rm, *forceRm}
+	source, ymlTag, err := resolveBuildDirectoryAndTag(cmd.Arg(0))
+	if err != nil {
+		return err
+	}
+	if ymlTag != "" {
+		options.tag = ymlTag
+	}
+	return cli.build(source, options)
 }
 
 func (cli *DockerCli) build(source string, options buildOptions) error {
@@ -1219,9 +1225,12 @@ func (cli *DockerCli) CmdPull(args ...string) error {
 		cmd.Usage()
 		return nil
 	}
+	remote, err := resolveImageRemote(cmd.Arg(0))
+	if err != nil {
+		return err
+	}
 	var (
 		v         = url.Values{}
-		remote    = cmd.Arg(0)
 		newRemote = remote
 	)
 	taglessRemote, tag := parsers.ParseRepositoryTag(remote)
@@ -2817,4 +2826,58 @@ func loadGroupConfig() (*GroupConfig, error) {
 	}
 
 	return raw, nil
+}
+
+func resolveImageRemote(name string) (string, error) {
+	if name[0] != ':' {
+		return name, nil
+	}
+
+	_, container, err := resolveContainerConfig(name[1:])
+	if err != nil {
+		return "", err
+	}
+
+	if container.Image == "" {
+		return "", fmt.Errorf("No image name specified for %#v in group.yml", name[1:])
+	}
+
+	return container.Image, nil
+}
+
+func resolveBuildDirectoryAndTag(name string) (string, string, error) {
+	if name[0] != ':' {
+		return name, "", nil
+	}
+
+	group, container, err := resolveContainerConfig(name[1:])
+	if err != nil {
+		return "", "", err
+	}
+
+	if container.Build == "" {
+		return "", "", fmt.Errorf("No build directory specified for %#v in group.yml", name[1:])
+	}
+
+	tag := fmt.Sprintf("%s-%s", group.Name, name[1:])
+
+	return container.Build, tag, nil
+}
+
+func resolveContainerConfig(name string) (*GroupConfig, *GroupContainer, error) {
+	group, err := loadGroupConfig()
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil, nil, fmt.Errorf("%#v specified but no group.yml found. Are you in the right directory?\n", ":"+name)
+		}
+
+		return nil, nil, err
+	}
+
+	container, ok := group.Containers[name]
+	if !ok {
+		return nil, nil, fmt.Errorf("No container named %#v defined in group.yml", name)
+	}
+
+	return group, container, nil
 }
