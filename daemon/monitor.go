@@ -274,11 +274,11 @@ func (m *containerMonitor) resetContainer(lock bool) {
 		}
 	}
 
-	if err := container.stdout.Clean(); err != nil {
+	if err := container.stdout.Close(); err != nil {
 		log.Errorf("%s: Error close stdout: %s", container.ID, err)
 	}
 
-	if err := container.stderr.Clean(); err != nil {
+	if err := container.stderr.Close(); err != nil {
 		log.Errorf("%s: Error close stderr: %s", container.ID, err)
 	}
 

@@ -13,8 +13,8 @@ import (
 	"github.com/docker/docker/daemon/execdriver"
 	"github.com/docker/docker/daemon/execdriver/lxc"
 	"github.com/docker/docker/engine"
-	"github.com/docker/docker/pkg/broadcastwriter"
 	"github.com/docker/docker/pkg/ioutils"
+	"github.com/docker/docker/pkg/multiwriter"
 	"github.com/docker/docker/pkg/promise"
 	"github.com/docker/docker/runconfig"
 	"github.com/docker/docker/utils"
@@ -194,8 +194,8 @@ func (d *Daemon) ContainerExecStart(job *engine.Job) engine.Status {
 		cStderr = job.Stderr
 	}
 
-	execConfig.StreamConfig.stderr = broadcastwriter.New()
-	execConfig.StreamConfig.stdout = broadcastwriter.New()
+	execConfig.StreamConfig.stderr = multiwriter.NewMultiWriter()
+	execConfig.StreamConfig.stdout = multiwriter.NewMultiWriter()
 	// Attach to stdin
 	if execConfig.OpenStdin {
 		execConfig.StreamConfig.stdin, execConfig.StreamConfig.stdinPipe = io.Pipe()

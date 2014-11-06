@@ -20,6 +20,7 @@ import (
 	"github.com/docker/docker/daemon/execdriver/lxc"
 	"github.com/docker/docker/daemon/graphdriver"
 	_ "github.com/docker/docker/daemon/graphdriver/vfs"
+	"github.com/docker/docker/daemon/loggingdriver"
 	_ "github.com/docker/docker/daemon/networkdriver/bridge"
 	"github.com/docker/docker/daemon/networkdriver/portallocator"
 	"github.com/docker/docker/dockerversion"
@@ -27,9 +28,10 @@ import (
 	"github.com/docker/docker/graph"
 	"github.com/docker/docker/image"
 	"github.com/docker/docker/pkg/archive"
-	"github.com/docker/docker/pkg/broadcastwriter"
 	"github.com/docker/docker/pkg/graphdb"
 	"github.com/docker/docker/pkg/ioutils"
+	"github.com/docker/docker/pkg/logmessage"
+	"github.com/docker/docker/pkg/multiwriter"
 	"github.com/docker/docker/pkg/namesgenerator"
 	"github.com/docker/docker/pkg/parsers"
 	"github.com/docker/docker/pkg/parsers/kernel"
@@ -98,6 +100,7 @@ type Daemon struct {
 	driver         graphdriver.Driver
 	execDriver     execdriver.Driver
 	trustStore     *trust.TrustStore
+	loggingDriver  loggingdriver.Driver
 }
 
 // Install installs daemon capabilities to eng.
@@ -209,8 +212,9 @@ func (daemon *Daemon) register(container *Container, updateSuffixarray bool) err
 	container.daemon = daemon
 
 	// Attach to stdout and stderr
-	container.stderr = broadcastwriter.New()
-	container.stdout = broadcastwriter.New()
+	container.stderr = multiwriter.NewMultiWriter()
+	container.stdout = multiwriter.NewMultiWriter()
+
 	// Attach to stdin
 	if container.Config.OpenStdin {
 		container.stdin, container.stdinPipe = io.Pipe()
@@ -287,12 +291,16 @@ func (daemon *Daemon) ensureName(container *Container) error {
 	return nil
 }
 
-func (daemon *Daemon) LogToDisk(src *broadcastwriter.BroadcastWriter, dst, stream string) error {
-	log, err := os.OpenFile(dst, os.O_RDWR|os.O_APPEND|os.O_CREATE, 0600)
+func (daemon *Daemon) LogToDisk(src *multiwriter.MultiWriter, dst, id, stream string) error {
+	logger, err := daemon.loggingDriver.NewLogger(id, stream)
 	if err != nil {
 		return err
 	}
-	src.AddWriter(log, stream)
+
+	w := logmessage.NewLogWriter(id, stream, logger)
+
+	src.Add(w)
+
 	return nil
 }
 
@@ -911,7 +919,9 @@ func NewDaemonFromDirectory(config *Config, eng *engine.Engine) (*Daemon, error)
 		execDriver:     ed,
 		eng:            eng,
 		trustStore:     t,
+		loggingDriver:  loggingdriver.NewDefaultDriver(daemonRepo),
 	}
+
 	if err := daemon.restore(); err != nil {
 		return nil, err
 	}

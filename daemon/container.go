@@ -24,8 +24,8 @@ import (
 	"github.com/docker/docker/links"
 	"github.com/docker/docker/nat"
 	"github.com/docker/docker/pkg/archive"
-	"github.com/docker/docker/pkg/broadcastwriter"
 	"github.com/docker/docker/pkg/ioutils"
+	"github.com/docker/docker/pkg/multiwriter"
 	"github.com/docker/docker/pkg/networkfs/etchosts"
 	"github.com/docker/docker/pkg/networkfs/resolvconf"
 	"github.com/docker/docker/pkg/promise"
@@ -44,8 +44,8 @@ var (
 )
 
 type StreamConfig struct {
-	stdout    *broadcastwriter.BroadcastWriter
-	stderr    *broadcastwriter.BroadcastWriter
+	stdout    *multiwriter.MultiWriter
+	stderr    *multiwriter.MultiWriter
 	stdin     io.ReadCloser
 	stdinPipe io.WriteCloser
 }
@@ -77,6 +77,10 @@ type Container struct {
 	command *execdriver.Command
 	StreamConfig
 
+	stdout                   *multiwriter.MultiWriter
+	stderr                   *multiwriter.MultiWriter
+	stdin                    io.ReadCloser
+	stdinPipe                io.WriteCloser
 	daemon                   *Daemon
 	MountLabel, ProcessLabel string
 	AppArmorProfile          string
@@ -373,25 +377,27 @@ func (streamConfig *StreamConfig) StdinPipe() (io.WriteCloser, error) {
 
 func (streamConfig *StreamConfig) StdoutPipe() (io.ReadCloser, error) {
 	reader, writer := io.Pipe()
-	streamConfig.stdout.AddWriter(writer, "")
+	streamConfig.stdout.Add(writer)
 	return ioutils.NewBufReader(reader), nil
 }
 
 func (streamConfig *StreamConfig) StderrPipe() (io.ReadCloser, error) {
 	reader, writer := io.Pipe()
-	streamConfig.stderr.AddWriter(writer, "")
+	streamConfig.stderr.Add(writer)
 	return ioutils.NewBufReader(reader), nil
 }
 
 func (streamConfig *StreamConfig) StdoutLogPipe() io.ReadCloser {
 	reader, writer := io.Pipe()
-	streamConfig.stdout.AddWriter(writer, "stdout")
+
+	streamConfig.stdout.Add(writer)
 	return ioutils.NewBufReader(reader)
 }
 
 func (streamConfig *StreamConfig) StderrLogPipe() io.ReadCloser {
 	reader, writer := io.Pipe()
-	streamConfig.stderr.AddWriter(writer, "stderr")
+
+	streamConfig.stderr.Add(writer)
 	return ioutils.NewBufReader(reader)
 }
 
@@ -1167,11 +1173,11 @@ func (container *Container) startLoggingToDisk() error {
 		return err
 	}
 
-	if err := container.daemon.LogToDisk(container.stdout, pth, "stdout"); err != nil {
+	if err := container.daemon.LogToDisk(container.stdout, pth, container.ID, "stdout"); err != nil {
 		return err
 	}
 
-	if err := container.daemon.LogToDisk(container.stderr, pth, "stderr"); err != nil {
+	if err := container.daemon.LogToDisk(container.stderr, pth, container.ID, "stderr"); err != nil {
 		return err
 	}
 
