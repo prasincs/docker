@@ -70,6 +70,7 @@ func init() {
 		"volume":     volume,
 		"user":       user,
 		"insert":     insert,
+		"log":        dispatchLog, // log is already declared
 	}
 }
 

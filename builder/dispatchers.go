@@ -351,3 +351,11 @@ func volume(b *Builder, args []string, attributes map[string]bool, original stri
 func insert(b *Builder, args []string, attributes map[string]bool, original string) error {
 	return fmt.Errorf("INSERT has been deprecated. Please use ADD instead")
 }
+
+// LOG "log_name:/path"
+//
+// Expose the log
+func dispatchLog(b *Builder, args []string, attributes map[string]bool, original string) error {
+	fmt.Printf("%v", attributes)
+	return nil
+}
