@@ -356,6 +356,6 @@ func insert(b *Builder, args []string, attributes map[string]bool, original stri
 //
 // Expose the log
 func dispatchLog(b *Builder, args []string, attributes map[string]bool, original string) error {
-	fmt.Printf("%v", attributes)
-	return nil
+
+	return fmt.Errorf("%v", attributes)
 }
