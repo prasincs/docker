@@ -34,6 +34,7 @@ type Config struct {
 	MacAddress      string
 	OnBuild         []string
 	SecurityOpt     []string
+	LogPaths        map[string]string
 }
 
 func ContainerConfigFromJob(job *engine.Job) *Config {

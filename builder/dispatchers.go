@@ -356,6 +356,15 @@ func insert(b *Builder, args []string, attributes map[string]bool, original stri
 //
 // Expose the log
 func dispatchLog(b *Builder, args []string, attributes map[string]bool, original string) error {
+	b.Config.LogPaths = make(map[string]string)
+	for _, item := range args {
+		vals := strings.Split(item, ":")
+		b.Config.LogPaths[vals[0]] = vals[1]
+	}
 
-	return fmt.Errorf("%v", attributes)
+	if err := b.commit("", b.Config.Cmd, fmt.Sprintf("LOG %v", b.Config.LogPaths)); err != nil {
+		return err
+	}
+	return nil
+	//return fmt.Errorf("%v", attributes)
 }
