@@ -116,6 +116,7 @@ func (daemon *Daemon) Install(eng *engine.Engine) error {
 		"info":              daemon.CmdInfo,
 		"kill":              daemon.ContainerKill,
 		"logs":              daemon.ContainerLogs,
+		"flogs":             daemon.ContainerFileLogs,
 		"pause":             daemon.ContainerPause,
 		"resize":            daemon.ContainerResize,
 		"restart":           daemon.ContainerRestart,

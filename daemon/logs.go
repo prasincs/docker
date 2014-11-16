@@ -16,6 +16,34 @@ import (
 	"github.com/docker/docker/pkg/timeutils"
 )
 
+func (daemon *Daemon) ContainerFileLogs(job *engine.Job) engine.Status {
+	if len(job.Args) != 1 {
+		return job.Errorf("Usage: %s CONTAINER\n", job.Name)
+	}
+	var (
+		name    = job.Args[0]
+		logName = job.Args[1]
+		tail    = job.Getenv("tail")
+	)
+
+	if logName == "" {
+		return job.Errorf("You need to give an identifier to read from")
+	}
+
+	if tail == "" {
+		tail = "all"
+	}
+	container := daemon.Get(name)
+	if container == nil {
+		return job.Errorf("No such container: %s", name)
+	}
+
+	log.Errorf("%v", container)
+
+	return engine.StatusOK
+
+}
+
 func (daemon *Daemon) ContainerLogs(job *engine.Job) engine.Status {
 	if len(job.Args) != 1 {
 		return job.Errorf("Usage: %s CONTAINER\n", job.Name)

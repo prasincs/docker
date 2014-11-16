@@ -1863,6 +1863,38 @@ func (cli *DockerCli) CmdLogs(args ...string) error {
 	return cli.streamHelper("GET", "/containers/"+name+"/logs?"+v.Encode(), env.GetSubEnv("Config").GetBool("Tty"), nil, cli.out, cli.err, nil)
 }
 
+func (cli *DockerCli) CmdFlogs(args ...string) error {
+	var (
+		cmd = cli.Subcmd("flogs", "CONTAINER", "Fetch the file logs of a container")
+	)
+
+	if err := cmd.Parse(args); err != nil {
+		return nil
+	}
+
+	if cmd.NArg() != 1 {
+		cmd.Usage()
+		return nil
+	}
+	name := cmd.Arg(0)
+
+	steam, _, err := cli.call("GET", "/containers/"+name+"/json", nil, false)
+	if err != nil {
+		return err
+	}
+
+	env := engine.Env{}
+	if err := env.Decode(steam); err != nil {
+		return err
+	}
+
+	v := url.Values{}
+	v.Set("stdout", "1")
+	v.Set("stderr", "1")
+
+	return cli.streamHelper("GET", "/containers/"+name+"/flogs?"+v.Encode(), env.GetSubEnv("Config").GetBool("Tty"), nil, cli.out, cli.err, nil)
+}
+
 func (cli *DockerCli) CmdAttach(args ...string) error {
 	var (
 		cmd     = cli.Subcmd("attach", "CONTAINER", "Attach to a running container")

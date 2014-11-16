@@ -383,6 +383,54 @@ func getContainersJSON(eng *engine.Engine, version version.Version, w http.Respo
 	return nil
 }
 
+func getContainersFlogs(eng *engine.Engine, version version.Version, w http.ResponseWriter, r *http.Request, vars map[string]string) error {
+	if err := parseForm(r); err != nil {
+		return err
+	}
+	if vars == nil {
+		return fmt.Errorf("Missing parameter")
+	}
+
+	var (
+		inspectJob = eng.Job("container_inspect", vars["name"])
+		logsJob    = eng.Job("flogs", vars["name"])
+		c, err     = inspectJob.Stdout.AddEnv()
+	)
+	if err != nil {
+		return err
+	}
+	logsJob.Setenv("follow", r.Form.Get("follow"))
+	logsJob.Setenv("tail", r.Form.Get("tail"))
+	logsJob.Setenv("stdout", r.Form.Get("stdout"))
+	logsJob.Setenv("stderr", r.Form.Get("stderr"))
+	logsJob.Setenv("timestamps", r.Form.Get("timestamps"))
+	// Validate args here, because we can't return not StatusOK after job.Run() call
+	stdout, stderr := logsJob.GetenvBool("stdout"), logsJob.GetenvBool("stderr")
+	if !(stdout || stderr) {
+		return fmt.Errorf("Bad parameters: you must choose at least one stream")
+	}
+	if err = inspectJob.Run(); err != nil {
+		return err
+	}
+
+	var outStream, errStream io.Writer
+	outStream = utils.NewWriteFlusher(w)
+
+	if c.GetSubEnv("Config") != nil && !c.GetSubEnv("Config").GetBool("Tty") && version.GreaterThanOrEqualTo("1.6") {
+		errStream = stdcopy.NewStdWriter(outStream, stdcopy.Stderr)
+		outStream = stdcopy.NewStdWriter(outStream, stdcopy.Stdout)
+	} else {
+		errStream = outStream
+	}
+
+	logsJob.Stdout.Add(outStream)
+	logsJob.Stderr.Set(errStream)
+	if err := logsJob.Run(); err != nil {
+		fmt.Fprintf(outStream, "Error running logs job: %s\n", err)
+	}
+	return nil
+}
+
 func getContainersLogs(eng *engine.Engine, version version.Version, w http.ResponseWriter, r *http.Request, vars map[string]string) error {
 	if err := parseForm(r); err != nil {
 		return err
@@ -1261,6 +1309,7 @@ func createRouter(eng *engine.Engine, logging, enableCors bool, dockerVersion st
 			"/containers/{name:.*}/changes":   getContainersChanges,
 			"/containers/{name:.*}/json":      getContainersByName,
 			"/containers/{name:.*}/top":       getContainersTop,
+			"/containers/{name:.*}/flogs":     getContainersFlogs,
 			"/containers/{name:.*}/logs":      getContainersLogs,
 			"/containers/{name:.*}/attach/ws": wsContainersAttach,
 		},
