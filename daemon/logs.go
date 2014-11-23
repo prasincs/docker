@@ -6,39 +6,73 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path"
 	"strconv"
 	"sync"
 
 	log "github.com/Sirupsen/logrus"
+	"github.com/docker/docker/daemon/graphdriver"
 	"github.com/docker/docker/engine"
 	"github.com/docker/docker/pkg/jsonlog"
 	"github.com/docker/docker/pkg/tailfile"
 	"github.com/docker/docker/pkg/timeutils"
 )
 
-func (daemon *Daemon) ContainerFileLogs(job *engine.Job) engine.Status {
+func FindRootDirFromDriver(driver graphdriver.Driver) string {
+	rootDir := ""
+	statusArray := driver.Status()
+	for i := range statusArray {
+		name := statusArray[i][0]
+		value := statusArray[i][1]
+		if name == "Root Dir" {
+			rootDir = value
+			break
+		}
+	}
+	return rootDir
+}
+
+func (daemon *Daemon) ContainerFlogs(job *engine.Job) engine.Status {
 	if len(job.Args) != 1 {
 		return job.Errorf("Usage: %s CONTAINER\n", job.Name)
 	}
+	log.Errorf("%v", job)
 	var (
 		name    = job.Args[0]
-		logName = job.Args[1]
-		tail    = job.Getenv("tail")
+		logName = job.Getenv("logname")
 	)
 
-	if logName == "" {
-		return job.Errorf("You need to give an identifier to read from")
-	}
+	rootDir := FindRootDirFromDriver(daemon.GraphDriver())
 
-	if tail == "" {
-		tail = "all"
-	}
+	log.Errorf("Root Dir %v", rootDir)
+	log.Errorf("%v", logName)
+	//if logName == "" {
+	//	return job.Errorf("You need to give an identifier to read from")
+	//}
+
+	//logPath := "/var/log/bootstrap.log"
+
+	// if tail == "" {
+	// 	tail = "all"
+	// }
 	container := daemon.Get(name)
 	if container == nil {
 		return job.Errorf("No such container: %s", name)
 	}
+	//configResPath, _ := container.getRootResourcePath("config.json")
+	arbitraryResPath := path.Join(container.RootfsPath(), logName)
 
-	log.Errorf("%v", container)
+	log.Errorf("%v", arbitraryResPath)
+
+	log.Errorf("%v", container.RootfsPath())
+
+	if file, err := os.Open(arbitraryResPath); err != nil {
+		log.Errorf("Error opening file path %s : %v", arbitraryResPath, err)
+	} else {
+		if _, err := io.Copy(job.Stdout, file); err != nil {
+			log.Errorf("Error streaming logs (stdout): %s", err)
+		}
+	}
 
 	return engine.StatusOK
 

@@ -399,6 +399,7 @@ func getContainersFlogs(eng *engine.Engine, version version.Version, w http.Resp
 	if err != nil {
 		return err
 	}
+	logsJob.Setenv("logname", r.Form.Get("logname"))
 	logsJob.Setenv("follow", r.Form.Get("follow"))
 	logsJob.Setenv("tail", r.Form.Get("tail"))
 	logsJob.Setenv("stdout", r.Form.Get("stdout"))

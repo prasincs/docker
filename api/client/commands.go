@@ -1865,7 +1865,8 @@ func (cli *DockerCli) CmdLogs(args ...string) error {
 
 func (cli *DockerCli) CmdFlogs(args ...string) error {
 	var (
-		cmd = cli.Subcmd("flogs", "CONTAINER", "Fetch the file logs of a container")
+		cmd     = cli.Subcmd("flogs", "CONTAINER", "Fetch the file logs of a container")
+		logname = cmd.String([]string{"-logname"}, "", "Show logs for identifier name")
 	)
 
 	if err := cmd.Parse(args); err != nil {
@@ -1889,6 +1890,10 @@ func (cli *DockerCli) CmdFlogs(args ...string) error {
 	}
 
 	v := url.Values{}
+
+	if *logname != "" {
+		v.Set("logname", *logname)
+	}
 	v.Set("stdout", "1")
 	v.Set("stderr", "1")
 
