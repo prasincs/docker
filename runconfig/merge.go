@@ -33,6 +33,10 @@ func Merge(userConf, imageConf *Config) error {
 		}
 	}
 
+	if userConf.LogPaths == nil {
+		userConf.LogPaths = imageConf.LogPaths
+	}
+
 	if len(userConf.PortSpecs) > 0 {
 		if userConf.ExposedPorts == nil {
 			userConf.ExposedPorts = make(nat.PortSet)

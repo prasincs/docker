@@ -3,6 +3,7 @@ package daemon
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -11,25 +12,17 @@ import (
 	"sync"
 
 	log "github.com/Sirupsen/logrus"
-	"github.com/docker/docker/daemon/graphdriver"
 	"github.com/docker/docker/engine"
 	"github.com/docker/docker/pkg/jsonlog"
 	"github.com/docker/docker/pkg/tailfile"
 	"github.com/docker/docker/pkg/timeutils"
 )
 
-func FindRootDirFromDriver(driver graphdriver.Driver) string {
-	rootDir := ""
-	statusArray := driver.Status()
-	for i := range statusArray {
-		name := statusArray[i][0]
-		value := statusArray[i][1]
-		if name == "Root Dir" {
-			rootDir = value
-			break
-		}
+func getPathFromName(logName string, container *Container) (string, error) {
+	if container.Config.LogPaths == nil {
+		return "", errors.New("No Log paths defined for this container")
 	}
-	return rootDir
+	return container.Config.LogPaths[logName], nil
 }
 
 func (daemon *Daemon) ContainerFlogs(job *engine.Job) engine.Status {
@@ -40,12 +33,9 @@ func (daemon *Daemon) ContainerFlogs(job *engine.Job) engine.Status {
 	var (
 		name    = job.Args[0]
 		logName = job.Getenv("logname")
+		//logPath = job.Getenv("logpath")
 	)
 
-	rootDir := FindRootDirFromDriver(daemon.GraphDriver())
-
-	log.Errorf("Root Dir %v", rootDir)
-	log.Errorf("%v", logName)
 	//if logName == "" {
 	//	return job.Errorf("You need to give an identifier to read from")
 	//}
@@ -60,17 +50,23 @@ func (daemon *Daemon) ContainerFlogs(job *engine.Job) engine.Status {
 		return job.Errorf("No such container: %s", name)
 	}
 	//configResPath, _ := container.getRootResourcePath("config.json")
-	arbitraryResPath := path.Join(container.RootfsPath(), logName)
-
-	log.Errorf("%v", arbitraryResPath)
-
-	log.Errorf("%v", container.RootfsPath())
-
-	if file, err := os.Open(arbitraryResPath); err != nil {
-		log.Errorf("Error opening file path %s : %v", arbitraryResPath, err)
+	if inferLogPath, err := getPathFromName(logName, container); err != nil {
+		log.Errorf("%v", err)
+		job.Errorf("Error getting Path based on %s, are you sure logs are defined?", logName)
+		return engine.StatusNotFound
 	} else {
-		if _, err := io.Copy(job.Stdout, file); err != nil {
-			log.Errorf("Error streaming logs (stdout): %s", err)
+		arbitraryResPath := path.Join(container.RootfsPath(), inferLogPath)
+
+		log.Errorf("%v", arbitraryResPath)
+
+		log.Errorf("%v", container.RootfsPath())
+
+		if file, err := os.Open(arbitraryResPath); err != nil {
+			log.Errorf("Error opening file path %s : %v", arbitraryResPath, err)
+		} else {
+			if _, err := io.Copy(job.Stdout, file); err != nil {
+				log.Errorf("Error streaming logs (stdout): %s", err)
+			}
 		}
 	}
 

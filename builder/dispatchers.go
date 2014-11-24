@@ -358,6 +358,7 @@ func insert(b *Builder, args []string, attributes map[string]bool, original stri
 func dispatchLog(b *Builder, args []string, attributes map[string]bool, original string) error {
 	b.Config.LogPaths = make(map[string]string)
 	for _, item := range args {
+		log.Errorf("%s", item)
 		vals := strings.Split(item, ":")
 		b.Config.LogPaths[vals[0]] = vals[1]
 	}
